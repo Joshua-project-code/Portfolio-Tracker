@@ -1,0 +1,38 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Generated parser outputs
+Output/
+../Output/
+
+# Local broker exports and statements
+POEMS/
+Interactive Brokers/
+../POEMS/
+../Interactive Brokers/
+
+# Excel temporary lock files
+~$*
