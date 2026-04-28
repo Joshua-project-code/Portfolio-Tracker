@@ -27,6 +27,7 @@ Vibe Coding/
 +-- Output/
 +-- Spreadsheet Parser/
 |   +-- parse_broker_reports.py
+|   +-- stock_mapping.csv
 ```
 
 ### POEMS Files
@@ -63,14 +64,25 @@ The Interactive Brokers CSV should include these sections:
 - `Open Positions`
 - `Financial Instrument Information`
 
+### Stock Mapping
+
+The project includes `stock_mapping.csv`, which maps each `stock_name` to:
+
+- `sector`
+- `geography`
+
+The parser uses this mapping to create investment-position pie charts. If you
+want to change a stock's sector or geography, or if a new stock appears as
+`Unmapped`, update `stock_mapping.csv` directly.
+
 ## Install Dependencies
 
-The script requires pandas and openpyxl.
+The script requires pandas, openpyxl, and matplotlib.
 
 Run:
 
 ```powershell
-python -m pip install pandas openpyxl
+python -m pip install pandas openpyxl matplotlib
 ```
 
 ## Run The Parser
@@ -88,6 +100,8 @@ The script will print:
 - Top 20 transaction records sorted by transaction date
 - Top 30 investment position records sorted by market value descending
 - Duplicate-record warnings, if duplicates exist
+- Monthly investment-position and transaction-amount line charts by broker and currency saved to `Output`
+- Sector and geography investment-position pie charts by currency saved to `Output`; slices under 10% are grouped as `Others`
 
 The script also saves the output CSV files into the parent-level `Output` folder
 using today's date in the filename. If the `Output` folder does not exist, the
@@ -106,6 +120,10 @@ Example output files:
 Output/
 +-- transactions_2026-04-28.csv
 +-- positions_2026-04-28.csv
++-- investment_positions_by_month_2026-04-28.png
++-- transactions_by_month_2026-04-28.png
++-- sector_distribution_2026-04-28.png
++-- geography_distribution_2026-04-28.png
 ```
 
 ## Optional Root Folder Argument
