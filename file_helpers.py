@@ -64,6 +64,15 @@ def find_csv_files(input_path: Path) -> list[Path]:
     )
 
 
+def ensure_folder_exists(folder_path: Path) -> None:
+    """Create a folder when it does not already exist."""
+    if folder_path.is_dir():
+        return
+
+    folder_path.mkdir(parents=True, exist_ok=True)
+    print(f"Created missing folder: {folder_path}")
+
+
 def get_broker_name(file_path: Path) -> str:
     """Infer the broker name from the containing folder path."""
     for parent in [file_path.parent, *file_path.parents]:
