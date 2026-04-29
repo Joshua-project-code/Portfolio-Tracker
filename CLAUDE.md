@@ -46,13 +46,14 @@ python .\parse_broker_reports.py "C:\path\to\broker-root"
 Quick syntax check for all Python files:
 
 ```powershell
-python -m py_compile validation.py stock_mapping.py poems_parser.py parse_broker_reports.py output_helpers.py interactive_brokers_parser.py file_helpers.py constants.py chart_helpers.py
+python -m py_compile app.py report_runner.py parse_broker_reports.py validation.py stock_mapping.py poems_parser.py output_helpers.py interactive_brokers_parser.py file_helpers.py constants.py chart_helpers.py
 ```
 
 ## File Map
 
 - `app.py`: Flask web server for the Portfolio Tracker UI, upload API, and report API.
-- `parse_broker_reports.py`: Main CLI entry point, web report runner, and orchestration.
+- `parse_broker_reports.py`: Main CLI entry point and user-friendly error handling.
+- `report_runner.py`: Shared report workflow used by the CLI and web app, including broker file discovery, dataframe construction, console preview output, CSV/chart generation, and web response serialization.
 - `templates/index.html`: Main web app page rendered by Flask.
 - `static/app.js`: Frontend report fetch and rendering logic.
 - `static/styles.css`: Web app styles.

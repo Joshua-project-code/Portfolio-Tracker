@@ -18,10 +18,8 @@ from constants import (
     EXCEL_EXTENSIONS,
 )
 from file_helpers import ensure_folder_exists
-from parse_broker_reports import (
-    get_user_friendly_error_message,
-    run_report_with_console_output,
-)
+from parse_broker_reports import get_user_friendly_error_message
+from report_runner import run_report_with_console_output
 
 
 app = Flask(__name__)
