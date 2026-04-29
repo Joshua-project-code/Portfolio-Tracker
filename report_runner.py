@@ -167,15 +167,15 @@ def save_report_outputs(
     )
 
 
-def dataframe_preview(dataframe: pd.DataFrame, row_limit: int) -> dict[str, Any]:
-    """Convert a DataFrame preview into JSON-friendly table data."""
-    preview = dataframe.head(row_limit).copy()
-    preview = preview.astype(object).where(pd.notna(preview), "")
+def dataframe_table(dataframe: pd.DataFrame) -> dict[str, Any]:
+    """Convert a full DataFrame into JSON-friendly table data."""
+    table = dataframe.copy()
+    table = table.astype(object).where(pd.notna(table), "")
     return {
-        "columns": preview.columns.tolist(),
+        "columns": table.columns.tolist(),
         "rows": [
             {column: format_table_value(value) for column, value in row.items()}
-            for row in preview.to_dict("records")
+            for row in table.to_dict("records")
         ],
         "total_rows": len(dataframe),
     }
@@ -251,8 +251,8 @@ def run_report(
         "generated_on": today,
         "poems_files": [path.name for path in workbooks],
         "interactive_brokers_files": [path.name for path in csv_files],
-        "transactions": dataframe_preview(transactions_df, 20),
-        "positions": dataframe_preview(positions_df, 30),
+        "transactions": dataframe_table(transactions_df),
+        "positions": dataframe_table(positions_df),
         "charts": chart_names,
         "csv_files": csv_names,
     }

@@ -102,10 +102,14 @@ http://127.0.0.1:5000
 Click `Run Report` to parse the broker files and view:
 
 - Loaded POEMS and Interactive Brokers files
-- Transaction and investment-position summaries
+- Scrollable transaction and investment-position tables
 - Generated chart images
 - Generated CSV output links
 - The same parser messages that previously printed only to the console
+
+The web tables format selected numeric columns to two decimal places and align
+numeric cells to the right for readability. This display formatting does not
+change the source data or generated CSV files.
 
 Click `Upload Files` to add new broker exports from the web app:
 

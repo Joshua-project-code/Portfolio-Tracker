@@ -241,6 +241,8 @@ main {
 }
 
 .table-wrap {
+  max-height: 445px;
+  overflow-y: auto;
   overflow-x: auto;
 }
 
@@ -262,11 +264,19 @@ td {
 th {
   background: #e9f0f2;
   font-size: 12px;
+  position: sticky;
+  top: 0;
   text-transform: uppercase;
+  z-index: 1;
 }
 
 td {
   font-size: 14px;
+}
+
+.numeric-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 pre {

@@ -15,6 +15,45 @@ function displayName(value) {
   return String(value).split("_").join(" ");
 }
 
+function formatDisplayValue(tableId, column, value) {
+  const decimalColumnsByTable = {
+    "transactions-table": new Set(["transaction_price", "units", "transaction_amount"]),
+    "positions-table": new Set([
+      "quantity",
+      "average_cost_price",
+      "market_value",
+      "total_cost",
+      "unrealized_pl",
+    ]),
+  };
+  const decimalColumns = decimalColumnsByTable[tableId];
+  if (!decimalColumns || !decimalColumns.has(column) || value === "") {
+    return value;
+  }
+
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) {
+    return value;
+  }
+
+  return numberValue.toFixed(2);
+}
+
+function isNumericColumn(tableId, column) {
+  const numericColumnsByTable = {
+    "transactions-table": new Set(["transaction_price", "units", "transaction_amount"]),
+    "positions-table": new Set([
+      "quantity",
+      "average_cost_price",
+      "last_done_price",
+      "market_value",
+      "total_cost",
+      "unrealized_pl",
+    ]),
+  };
+  return numericColumnsByTable[tableId]?.has(column) || false;
+}
+
 function setStatus(message) {
   statusText.textContent = message;
 }
@@ -125,7 +164,14 @@ function renderTable(elementId, tableData) {
     const bodyRow = document.createElement("tr");
     tableData.columns.forEach((column) => {
       const cell = document.createElement("td");
-      cell.textContent = row[column];
+      if (isNumericColumn(container.id, column)) {
+        cell.className = "numeric-cell";
+      }
+      cell.textContent = formatDisplayValue(
+        container.id,
+        column,
+        row[column]
+      );
       bodyRow.appendChild(cell);
     });
     tbody.appendChild(bodyRow);
@@ -160,9 +206,9 @@ async function runReport() {
     renderTable("#positions-table", data.positions);
 
     document.querySelector("#transaction-caption").textContent =
-      `Top ${data.transactions.rows.length} of ${data.transactions.total_rows} rows`;
+      `Showing ${data.transactions.rows.length} row(s)`;
     document.querySelector("#position-caption").textContent =
-      `Top ${data.positions.rows.length} of ${data.positions.total_rows} rows`;
+      `Showing ${data.positions.rows.length} row(s)`;
     document.querySelector("#console-output").textContent =
       data.console_output || "No console output was produced.";
     setStatus("Complete");
