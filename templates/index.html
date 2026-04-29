@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Portfolio Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>Portfolio Tracker</h1>
+        <p>Broker transactions, positions, saved files, and parser messages in one view.</p>
+      </div>
+      <button id="run-report" type="button">Run Report</button>
+    </header>
+
+    <main>
+      <section class="status-row" aria-live="polite">
+        <div>
+          <span class="label">Broker root</span>
+          <strong>{{ default_root_path }}</strong>
+        </div>
+        <div>
+          <span class="label">Output folder</span>
+          <strong>{{ output_path }}</strong>
+        </div>
+        <div>
+          <span class="label">Status</span>
+          <strong id="status-text">Ready</strong>
+        </div>
+      </section>
+
+      <section class="summary-grid">
+        <article class="metric">
+          <span class="label">POEMS workbooks</span>
+          <strong id="poems-count">0</strong>
+        </article>
+        <article class="metric">
+          <span class="label">Interactive Brokers CSVs</span>
+          <strong id="ib-count">0</strong>
+        </article>
+        <article class="metric">
+          <span class="label">Transactions</span>
+          <strong id="transaction-count">0</strong>
+        </article>
+        <article class="metric">
+          <span class="label">Positions</span>
+          <strong id="position-count">0</strong>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Input Files</h2>
+        </div>
+        <div class="file-columns">
+          <div>
+            <h3>POEMS</h3>
+            <ul id="poems-files" class="file-list"></ul>
+          </div>
+          <div>
+            <h3>Interactive Brokers</h3>
+            <ul id="ib-files" class="file-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Charts</h2>
+        </div>
+        <div id="chart-grid" class="chart-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Output CSV Files</h2>
+        </div>
+        <div id="csv-links" class="link-row"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Transaction Details</h2>
+          <span id="transaction-caption" class="caption"></span>
+        </div>
+        <div id="transactions-table" class="table-wrap"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Investment Positions</h2>
+          <span id="position-caption" class="caption"></span>
+        </div>
+        <div id="positions-table" class="table-wrap"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Console Output</h2>
+        </div>
+        <pre id="console-output">Run the report to display parser output here.</pre>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

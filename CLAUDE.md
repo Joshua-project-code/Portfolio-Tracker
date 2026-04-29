@@ -18,7 +18,13 @@ The main workflow is:
 Install dependencies:
 
 ```powershell
-python -m pip install pandas openpyxl matplotlib
+python -m pip install pandas openpyxl matplotlib flask
+```
+
+Run the web app from the project folder:
+
+```powershell
+python .\app.py
 ```
 
 Run the parser from the project folder:
@@ -41,7 +47,11 @@ python -m py_compile validation.py stock_mapping.py poems_parser.py parse_broker
 
 ## File Map
 
-- `parse_broker_reports.py`: Main CLI entry point and orchestration.
+- `app.py`: Flask web server for the Portfolio Tracker UI and report API.
+- `parse_broker_reports.py`: Main CLI entry point, web report runner, and orchestration.
+- `templates/index.html`: Main web app page rendered by Flask.
+- `static/app.js`: Frontend report fetch and rendering logic.
+- `static/styles.css`: Web app styles.
 - `constants.py`: Shared paths, extensions, and canonical output schemas.
 - `file_helpers.py`: File discovery, folder creation, sheet lookup, column cleanup, and broker-name inference.
 - `poems_parser.py`: POEMS Excel transaction and position parsing.
@@ -97,6 +107,10 @@ Do not commit broker exports or generated outputs. `.gitignore` already excludes
 - Keep chart generation inside `chart_helpers.py`.
 - Keep filesystem path and discovery logic inside `file_helpers.py`.
 - Avoid broad refactors unless needed for the requested change.
+- Keep all Markdown documentation up to date when implementing changes,
+  especially `README.md`, `PYTHON_FILES.md`, and this `CLAUDE.md` guidance.
+  If behavior, commands, dependencies, file structure, or user workflows change,
+  update the relevant Markdown files in the same change.
 - If adding new output files, update `README.md` and `.gitignore` if appropriate.
 
 ## Verification

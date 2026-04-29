@@ -4,7 +4,8 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 
 | File | Purpose |
 | --- | --- |
-| `parse_broker_reports.py` | Main command-line entry point. Checks broker input folders, combines POEMS and Interactive Brokers dataframes, prints previews and duplicate warnings, and orchestrates CSV and chart output generation. |
+| `app.py` | Flask web server. Serves the Portfolio Tracker UI, runs the parser workflow through an API endpoint, and exposes generated output files. |
+| `parse_broker_reports.py` | Main command-line entry point and reusable report runner. Checks broker input folders, combines POEMS and Interactive Brokers dataframes, prints previews and duplicate warnings, and orchestrates CSV and chart output generation. |
 | `constants.py` | Defines shared paths, supported file extensions, and the standard transaction and position dataframe column schemas. |
 | `file_helpers.py` | Provides reusable file and spreadsheet helpers, including workbook and CSV discovery, Excel sheet lookup, column-name cleanup, and broker-name inference from folder paths. |
 | `output_helpers.py` | Saves generated transaction and position dataframes to dated CSV files, overwriting only matching filenames. |

@@ -7,8 +7,12 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import sys
+from datetime import date
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -33,6 +37,52 @@ from output_helpers import save_dataframes_to_csv
 from poems_parser import parse_poems_workbooks
 from stock_mapping import enrich_positions_with_mapping, load_stock_mapping
 from validation import print_duplicate_records_message
+
+
+def dataframe_preview(dataframe: pd.DataFrame, row_limit: int) -> dict[str, Any]:
+    """Convert a DataFrame preview into JSON-friendly table data."""
+    preview = dataframe.head(row_limit).copy()
+    preview = preview.astype(object).where(pd.notna(preview), "")
+    return {
+        "columns": preview.columns.tolist(),
+        "rows": [
+            {column: format_table_value(value) for column, value in row.items()}
+            for row in preview.to_dict("records")
+        ],
+        "total_rows": len(dataframe),
+    }
+
+
+def format_table_value(value: Any) -> Any:
+    """Convert pandas and path objects into values Flask can serialize as JSON."""
+    if isinstance(value, pd.Timestamp):
+        return value.date().isoformat()
+    if hasattr(value, "isoformat") and not isinstance(value, str):
+        return value.isoformat()
+    if hasattr(value, "item"):
+        return value.item()
+    return value
+
+
+def find_broker_files_for_report(
+    broker_name: str,
+    folder_path: Path,
+    file_description: str,
+    find_files,
+) -> list[Path]:
+    """Find broker files without waiting for terminal input."""
+    ensure_folder_exists(folder_path)
+    try:
+        files = find_files(folder_path)
+    except FileNotFoundError:
+        files = []
+
+    if not files:
+        print(f"No {file_description} found in the {broker_name} folder:")
+        print(folder_path)
+        print(f"Continuing without {broker_name} data.")
+
+    return files
 
 
 def wait_for_broker_files(
@@ -121,15 +171,24 @@ def run_parser() -> None:
     )
     args = parser.parse_args()
 
-    poems_path = args.root_path / "POEMS"
-    interactive_brokers_path = args.root_path / "Interactive Brokers"
-    workbooks = wait_for_broker_files(
+    run_report(args.root_path, prompt_for_missing_files=True)
+
+
+def run_report(
+    root_path: Path = DEFAULT_BROKER_ROOT_PATH,
+    prompt_for_missing_files: bool = False,
+) -> dict[str, Any]:
+    """Run the full parser workflow and return data suitable for the web app."""
+    poems_path = root_path / "POEMS"
+    interactive_brokers_path = root_path / "Interactive Brokers"
+    file_finder = wait_for_broker_files if prompt_for_missing_files else find_broker_files_for_report
+    workbooks = file_finder(
         "POEMS",
         poems_path,
         "POEMS Excel workbook(s)",
         find_workbooks,
     )
-    csv_files = wait_for_broker_files(
+    csv_files = file_finder(
         "Interactive Brokers",
         interactive_brokers_path,
         "Interactive Brokers CSV file(s)",
@@ -175,6 +234,41 @@ def run_parser() -> None:
         "geography_distribution",
         DEFAULT_OUTPUT_PATH,
     )
+
+    today = date.today().isoformat()
+    chart_names = [
+        f"investment_positions_by_month_{today}.png",
+        f"transactions_by_month_{today}.png",
+        f"sector_distribution_{today}.png",
+        f"geography_distribution_{today}.png",
+    ]
+    csv_names = [
+        f"transactions_{today}.csv",
+        f"positions_{today}.csv",
+    ]
+
+    return {
+        "root_path": str(root_path),
+        "output_path": str(DEFAULT_OUTPUT_PATH),
+        "generated_on": today,
+        "poems_files": [path.name for path in workbooks],
+        "interactive_brokers_files": [path.name for path in csv_files],
+        "transactions": dataframe_preview(transactions_df, 20),
+        "positions": dataframe_preview(positions_df, 30),
+        "charts": [name for name in chart_names if (DEFAULT_OUTPUT_PATH / name).exists()],
+        "csv_files": [name for name in csv_names if (DEFAULT_OUTPUT_PATH / name).exists()],
+    }
+
+
+def run_report_with_console_output(
+    root_path: Path = DEFAULT_BROKER_ROOT_PATH,
+) -> dict[str, Any]:
+    """Run the report and include the legacy console output as captured text."""
+    output_buffer = io.StringIO()
+    with contextlib.redirect_stdout(output_buffer):
+        report = run_report(root_path=root_path, prompt_for_missing_files=False)
+    report["console_output"] = output_buffer.getvalue()
+    return report
 
 
 def print_user_friendly_error(error: Exception) -> None:

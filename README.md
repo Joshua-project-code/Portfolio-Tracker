@@ -77,15 +77,37 @@ want to change a stock's sector or geography, or if a new stock appears as
 
 ## Install Dependencies
 
-The script requires pandas, openpyxl, and matplotlib.
+The script and web app require pandas, openpyxl, matplotlib, and Flask.
 
 Run:
 
 ```powershell
-python -m pip install pandas openpyxl matplotlib
+python -m pip install pandas openpyxl matplotlib flask
 ```
 
-## Run The Parser
+## Run The Web App
+
+From the project folder, run:
+
+```powershell
+python .\app.py
+```
+
+Open the local Flask URL shown in the terminal, usually:
+
+```text
+http://127.0.0.1:5000
+```
+
+Click `Run Report` to parse the broker files and view:
+
+- Loaded POEMS and Interactive Brokers files
+- Transaction and investment-position summaries
+- Generated chart images
+- Generated CSV output links
+- The same parser messages that previously printed only to the console
+
+## Run The Parser From The Console
 
 From the project folder, run:
 
