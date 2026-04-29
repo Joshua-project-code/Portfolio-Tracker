@@ -1,10 +1,10 @@
-# CLAUDE.md
+# Portfolio Tracker
 
 Guidance for future Claude Code sessions working in this repository.
 
 ## Project Purpose
 
-This project parses investment broker exports into standardized pandas DataFrames and saves CSV/chart outputs. It supports POEMS Excel workbooks and Interactive Brokers CSV activity statements.
+Portfolio Tracker parses investment broker exports into standardized pandas DataFrames and saves CSV/chart outputs. It supports POEMS Excel workbooks and Interactive Brokers CSV activity statements.
 
 The main workflow is:
 
@@ -79,7 +79,7 @@ Vibe Coding/
 +-- POEMS/
 +-- Interactive Brokers/
 +-- Output/
-+-- Spreadsheet Parser/
++-- Portfolio Tracker/
 ```
 
 Do not commit broker exports or generated outputs. `.gitignore` already excludes local broker folders, `Output`, Python caches, virtual environments, and Matplotlib cache files.

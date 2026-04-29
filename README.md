@@ -1,6 +1,6 @@
-# Spreadsheet Parser
+# Portfolio Tracker
 
-This project parses investment transaction and position exports from broker reports into pandas dataframes.
+Portfolio Tracker parses investment transaction and position exports from broker reports into pandas dataframes.
 
 It currently supports:
 
@@ -25,7 +25,7 @@ Vibe Coding/
 +-- Interactive Brokers/
 |   +-- your-interactive-brokers-export.csv
 +-- Output/
-+-- Spreadsheet Parser/
++-- Portfolio Tracker/
 |   +-- parse_broker_reports.py
 |   +-- stock_mapping.csv
 ```

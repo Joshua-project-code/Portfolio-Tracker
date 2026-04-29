@@ -1,4 +1,4 @@
-# This module is the command-line entry point for the broker report parser. It
+# This module is the command-line entry point for Portfolio Tracker. It
 # contains wait_for_broker_files() for locating or prompting for source files,
 # build_dataframes() for combining POEMS and Interactive Brokers data, main()
 # and run_parser() for the end-to-end workflow, and the user-friendly error
@@ -106,6 +106,7 @@ def main() -> None:
 def run_parser() -> None:
     """Parse command-line arguments, build dataframes, and print report previews."""
     parser = argparse.ArgumentParser(
+        prog="Portfolio Tracker",
         description="Parse broker transaction details and investment positions."
     )
     parser.add_argument(

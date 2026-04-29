@@ -1,6 +1,6 @@
-# Python File Reference
+# Portfolio Tracker Python File Reference
 
-This file lists the Python modules in this project and what each one is used for.
+This file lists the Python modules in Portfolio Tracker and what each one is used for.
 
 | File | Purpose |
 | --- | --- |
