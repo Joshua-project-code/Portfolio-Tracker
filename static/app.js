@@ -1,4 +1,9 @@
 const runButton = document.querySelector("#run-report");
+const showUploadButton = document.querySelector("#show-upload");
+const uploadPanel = document.querySelector("#upload-panel");
+const uploadForm = document.querySelector("#upload-form");
+const uploadSubmitButton = document.querySelector("#upload-submit");
+const uploadMessage = document.querySelector("#upload-message");
 const statusText = document.querySelector("#status-text");
 
 function outputUrl(file, cacheKey = "") {
@@ -12,6 +17,22 @@ function displayName(value) {
 
 function setStatus(message) {
   statusText.textContent = message;
+}
+
+function setButtonsDisabled(disabled) {
+  runButton.disabled = disabled;
+  uploadSubmitButton.disabled = disabled;
+}
+
+function formatUploadResult(data) {
+  const poemsCount = data.saved_files.poems_files.length;
+  const ibCount = data.saved_files.interactive_brokers_files.length;
+  const rejectedCount = data.rejected_files.length;
+  const parts = [`Uploaded ${poemsCount} POEMS file(s) and ${ibCount} Interactive Brokers file(s).`];
+  if (rejectedCount) {
+    parts.push(`${rejectedCount} file(s) were rejected.`);
+  }
+  return parts.join(" ");
 }
 
 function renderFileList(elementId, files) {
@@ -115,7 +136,7 @@ function renderTable(elementId, tableData) {
 }
 
 async function runReport() {
-  runButton.disabled = true;
+  setButtonsDisabled(true);
   setStatus("Running");
   document.querySelector("#console-output").textContent = "Running report...";
 
@@ -149,9 +170,47 @@ async function runReport() {
     setStatus("Failed");
     document.querySelector("#console-output").textContent = error.message;
   } finally {
-    runButton.disabled = false;
+    setButtonsDisabled(false);
   }
 }
 
+async function uploadFiles(event) {
+  event.preventDefault();
+  const formData = new FormData(uploadForm);
+  const hasFiles = Array.from(formData.values()).some((value) => value instanceof File && value.name);
+  if (!hasFiles) {
+    uploadMessage.textContent = "Choose at least one POEMS workbook or Interactive Brokers CSV.";
+    return;
+  }
+
+  setButtonsDisabled(true);
+  setStatus("Uploading");
+  uploadMessage.textContent = "Uploading files...";
+
+  try {
+    const response = await fetch("/api/upload-files", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "The upload could not complete.");
+    }
+
+    uploadMessage.textContent = formatUploadResult(data);
+    uploadForm.reset();
+    await runReport();
+  } catch (error) {
+    setStatus("Upload failed");
+    uploadMessage.textContent = error.message;
+  } finally {
+    setButtonsDisabled(false);
+  }
+}
+
+showUploadButton.addEventListener("click", () => {
+  uploadPanel.hidden = !uploadPanel.hidden;
+});
 runButton.addEventListener("click", runReport);
+uploadForm.addEventListener("submit", uploadFiles);
 document.addEventListener("DOMContentLoaded", runReport);

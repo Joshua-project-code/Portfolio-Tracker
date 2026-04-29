@@ -12,10 +12,31 @@
         <h1>Portfolio Tracker</h1>
         <p>Broker transactions, positions, saved files, and parser messages in one view.</p>
       </div>
-      <button id="run-report" type="button">Run Report</button>
+      <div class="header-actions">
+        <button id="show-upload" type="button">Upload Files</button>
+        <button id="run-report" type="button">Run Report</button>
+      </div>
     </header>
 
     <main>
+      <section id="upload-panel" class="panel upload-panel" hidden>
+        <div class="panel-heading">
+          <h2>Upload Broker Files</h2>
+        </div>
+        <form id="upload-form" class="upload-form">
+          <label>
+            <span class="label">POEMS workbooks</span>
+            <input id="poems-upload" name="poems_files" type="file" accept=".xlsx,.xlsm,.xls" multiple>
+          </label>
+          <label>
+            <span class="label">Interactive Brokers CSVs</span>
+            <input id="ib-upload" name="interactive_brokers_files" type="file" accept=".csv" multiple>
+          </label>
+          <button id="upload-submit" type="submit">Upload And Run</button>
+        </form>
+        <div id="upload-message" class="upload-message muted"></div>
+      </section>
+
       <section class="status-row" aria-live="polite">
         <div>
           <span class="label">Broker root</span>

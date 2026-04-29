@@ -107,6 +107,12 @@ Click `Run Report` to parse the broker files and view:
 - Generated CSV output links
 - The same parser messages that previously printed only to the console
 
+Click `Upload Files` to add new broker exports from the web app:
+
+- POEMS uploads accept `.xlsx`, `.xlsm`, and `.xls` files and save them to the sibling `POEMS` folder
+- Interactive Brokers uploads accept `.csv` files and save them to the sibling `Interactive Brokers` folder
+- After a successful upload, the web app automatically re-runs the report using all files in both broker folders
+
 ## Run The Parser From The Console
 
 From the project folder, run:

@@ -6,9 +6,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, send_from_directory
+from flask import Flask, jsonify, render_template, request, send_from_directory
+from werkzeug.utils import secure_filename
 
-from constants import DEFAULT_BROKER_ROOT_PATH, DEFAULT_OUTPUT_PATH
+from constants import (
+    CSV_EXTENSIONS,
+    DEFAULT_BROKER_ROOT_PATH,
+    DEFAULT_INTERACTIVE_BROKERS_PATH,
+    DEFAULT_OUTPUT_PATH,
+    DEFAULT_POEMS_PATH,
+    EXCEL_EXTENSIONS,
+)
+from file_helpers import ensure_folder_exists
 from parse_broker_reports import (
     get_user_friendly_error_message,
     run_report_with_console_output,
@@ -16,6 +25,20 @@ from parse_broker_reports import (
 
 
 app = Flask(__name__)
+
+
+UPLOAD_TARGETS = {
+    "poems_files": {
+        "folder": DEFAULT_POEMS_PATH,
+        "extensions": EXCEL_EXTENSIONS,
+        "label": "POEMS",
+    },
+    "interactive_brokers_files": {
+        "folder": DEFAULT_INTERACTIVE_BROKERS_PATH,
+        "extensions": CSV_EXTENSIONS,
+        "label": "Interactive Brokers",
+    },
+}
 
 
 @app.get("/")
@@ -45,6 +68,56 @@ def run_report_api():
         )
 
     return jsonify(report)
+
+
+@app.post("/api/upload-files")
+def upload_files_api():
+    """Upload broker files into the configured source folders."""
+    saved_files: dict[str, list[str]] = {
+        "poems_files": [],
+        "interactive_brokers_files": [],
+    }
+    rejected_files: list[str] = []
+
+    for field_name, target in UPLOAD_TARGETS.items():
+        uploaded_files = request.files.getlist(field_name)
+        ensure_folder_exists(target["folder"])
+        allowed_extensions = target["extensions"]
+        label = target["label"]
+
+        for uploaded_file in uploaded_files:
+            if not uploaded_file or not uploaded_file.filename:
+                continue
+
+            original_name = uploaded_file.filename
+            safe_name = secure_filename(original_name)
+            extension = Path(safe_name).suffix.lower()
+            if not safe_name or extension not in allowed_extensions:
+                rejected_files.append(f"{original_name} is not a supported {label} file.")
+                continue
+
+            destination = target["folder"] / safe_name
+            uploaded_file.save(destination)
+            saved_files[field_name].append(safe_name)
+
+    if not saved_files["poems_files"] and not saved_files["interactive_brokers_files"]:
+        return (
+            jsonify(
+                {
+                    "error": "No supported files were uploaded.",
+                    "rejected_files": rejected_files,
+                    "saved_files": saved_files,
+                }
+            ),
+            400,
+        )
+
+    return jsonify(
+        {
+            "saved_files": saved_files,
+            "rejected_files": rejected_files,
+        }
+    )
 
 
 @app.get("/outputs/<path:filename>")

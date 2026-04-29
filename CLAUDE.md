@@ -13,6 +13,10 @@ The main workflow is:
 3. Print duplicate-row warnings and table previews.
 4. Save dated CSV files and PNG charts into the sibling `Output` folder.
 
+The Flask web app can also upload new POEMS workbook files and Interactive
+Brokers CSV files into those sibling folders, then re-run the parser workflow
+against all available files.
+
 ## Run Commands
 
 Install dependencies:
@@ -47,7 +51,7 @@ python -m py_compile validation.py stock_mapping.py poems_parser.py parse_broker
 
 ## File Map
 
-- `app.py`: Flask web server for the Portfolio Tracker UI and report API.
+- `app.py`: Flask web server for the Portfolio Tracker UI, upload API, and report API.
 - `parse_broker_reports.py`: Main CLI entry point, web report runner, and orchestration.
 - `templates/index.html`: Main web app page rendered by Flask.
 - `static/app.js`: Frontend report fetch and rendering logic.
