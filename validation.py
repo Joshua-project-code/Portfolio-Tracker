@@ -1,3 +1,8 @@
+# This module contains validation-oriented console output helpers for parsed
+# broker data. It currently provides print_duplicate_records_message(), which
+# reports duplicated full rows in a pandas DataFrame so input or parser issues
+# can be spotted before saving the final output files.
+
 from __future__ import annotations
 
 import pandas as pd

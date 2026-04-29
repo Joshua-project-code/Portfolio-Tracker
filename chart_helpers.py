@@ -1,3 +1,9 @@
+# This module builds chart-ready summaries and saves Matplotlib chart images for
+# broker positions and transactions. It contains helpers for the Matplotlib
+# cache directory, monthly position and transaction totals, monthly line charts,
+# currency-separated position distribution pie charts, and aggregation of small
+# pie slices into an Others category.
+
 from __future__ import annotations
 
 import os

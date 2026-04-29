@@ -1,3 +1,8 @@
+# This module parses Interactive Brokers activity CSV exports into the shared
+# transaction and position schemas. It contains helpers to extract named CSV
+# sections and instrument names, parse transaction and open-position rows from
+# one file, and parse the corresponding data across an entire folder.
+
 from __future__ import annotations
 
 from pathlib import Path

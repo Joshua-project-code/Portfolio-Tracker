@@ -1,3 +1,9 @@
+# This module centralizes filesystem and source-file discovery helpers used by
+# the broker parsers. It contains clean_column_name(), find_sheet_name(),
+# find_workbooks(), find_csv_files(), ensure_folder_exists(), and
+# get_broker_name() for normalizing columns, locating input files, creating
+# output folders, and inferring broker names from paths.
+
 from __future__ import annotations
 
 from pathlib import Path

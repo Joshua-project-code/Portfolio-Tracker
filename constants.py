@@ -1,3 +1,8 @@
+# This module defines project-wide constants shared by the parser modules. It
+# contains default folder and file paths, supported Excel and CSV extensions,
+# and the canonical TRANSACTION_COLUMNS and POSITION_COLUMNS schemas used when
+# constructing output DataFrames.
+
 from __future__ import annotations
 
 from pathlib import Path

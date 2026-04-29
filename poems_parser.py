@@ -1,3 +1,10 @@
+# This module parses POEMS Excel workbooks into the common transaction and
+# position schemas used by the rest of the project. It contains
+# parse_poems_transactions(), parse_poems_positions(),
+# add_stock_codes_to_positions(), and parse_poems_workbooks(), plus the
+# TRADE_PATTERN expression used to extract trade details from POEMS description
+# text.
+
 from __future__ import annotations
 
 import re

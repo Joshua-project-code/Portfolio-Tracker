@@ -1,3 +1,9 @@
+# This module is the command-line entry point for the broker report parser. It
+# contains wait_for_broker_files() for locating or prompting for source files,
+# build_dataframes() for combining POEMS and Interactive Brokers data, main()
+# and run_parser() for the end-to-end workflow, and the user-friendly error
+# helpers print_user_friendly_error() and get_user_friendly_error_message().
+
 from __future__ import annotations
 
 import argparse

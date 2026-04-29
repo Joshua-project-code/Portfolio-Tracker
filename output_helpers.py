@@ -1,3 +1,8 @@
+# This module contains helpers for writing parser outputs to disk. It provides
+# save_dataframes_to_csv() to save the final transactions and positions tables
+# with date-stamped filenames, and save_dataframe_to_csv() to write one
+# DataFrame while printing whether the file was created or overwritten.
+
 from __future__ import annotations
 
 from datetime import date

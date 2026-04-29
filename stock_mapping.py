@@ -1,3 +1,9 @@
+# This module loads and applies stock classification metadata used by the chart
+# outputs. It contains load_stock_mapping() to read sector/geography mappings
+# from CSV, normalize_stock_name() to make stock names comparable across broker
+# exports, and enrich_positions_with_mapping() to add mapping columns to the
+# parsed investment positions DataFrame.
+
 from __future__ import annotations
 
 from pathlib import Path
