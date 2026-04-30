@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Application Testing</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>Application Testing</h1>
+        <p>Run the automated application tests and inspect each test case result.</p>
+      </div>
+      <div class="header-actions">
+        <a class="button-link" href="{{ url_for('index') }}">Portfolio Tracker</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="testing-toolbar" aria-live="polite">
+        <button id="run-all-tests" type="button">Run All Tests</button>
+        <strong id="test-summary">0 passed out of a total of 0 tests</strong>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Test Cases</h2>
+          <span id="testing-status" class="caption">Ready</span>
+        </div>
+        <div id="test-case-list" class="test-case-list"></div>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='testing.js') }}"></script>
+  </body>
+</html>

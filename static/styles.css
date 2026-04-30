@@ -54,13 +54,26 @@ button {
   padding: 11px 16px;
 }
 
-button:hover {
+button:hover,
+.button-link:hover {
   background: var(--accent-dark);
 }
 
 button:disabled {
   cursor: wait;
   opacity: 0.65;
+}
+
+.button-link {
+  background: var(--accent);
+  border-radius: 6px;
+  color: #ffffff;
+  display: inline-block;
+  font-weight: 700;
+  min-width: 128px;
+  padding: 11px 16px;
+  text-align: center;
+  text-decoration: none;
 }
 
 .header-actions {
@@ -240,6 +253,91 @@ main {
   overflow-wrap: anywhere;
 }
 
+.testing-toolbar {
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  gap: 18px;
+  justify-content: flex-start;
+  margin-bottom: 16px;
+  padding: 16px;
+}
+
+.testing-toolbar strong {
+  font-size: 18px;
+}
+
+.test-case-list {
+  display: grid;
+}
+
+.test-case-row {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 16px;
+}
+
+.test-case-row:last-child {
+  border-bottom: 0;
+}
+
+.test-case-details h3 {
+  font-size: 15px;
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+
+.test-case-details p {
+  margin: 6px 0 0;
+}
+
+.test-expected {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.test-case-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.test-result {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 78px;
+  padding: 6px 10px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.test-result.passed {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.test-result.failed {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.test-result.running {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
 .table-wrap {
   max-height: 445px;
   overflow-y: auto;
@@ -310,6 +408,16 @@ pre {
   .summary-grid,
   .file-columns,
   .chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .testing-toolbar,
+  .test-case-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .test-case-row {
     grid-template-columns: 1fr;
   }
 }

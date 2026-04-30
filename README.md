@@ -117,6 +117,10 @@ Click `Upload Files` to add new broker exports from the web app:
 - Interactive Brokers uploads accept `.csv` files and save them to the sibling `Interactive Brokers` folder
 - After a successful upload, the web app automatically re-runs the report using all files in both broker folders
 
+Click `Application Testing` to open the automated test page. The page lists
+the catalogued test cases from `testapp.md`, lets you run each test
+individually, and includes a `Run All Tests` button with a pass-count summary.
+
 ## Run The Parser From The Console
 
 From the project folder, run:
@@ -167,3 +171,14 @@ You can also provide a different broker root folder that contains `POEMS` and `I
 ```powershell
 python .\parse_broker_reports.py "C:\path\to\your\folder"
 ```
+
+## Run Automated Tests
+
+From the project folder, run:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+The `testapp.md` file catalogues each automated test case, its description, and
+the expected observed output.

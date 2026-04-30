@@ -810,6 +810,50 @@ class FlaskAppTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Portfolio Tracker", response.data)
+        self.assertIn(b"Application Testing", response.data)
+
+    def test_application_testing_page_renders_test_runner_shell(self) -> None:
+        flask_app.app.config.update(TESTING=True)
+        client = flask_app.app.test_client()
+
+        response = client.get("/application-testing")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Application Testing", response.data)
+        self.assertIn(b"Run All Tests", response.data)
+
+    def test_tests_api_returns_catalogued_test_cases(self) -> None:
+        flask_app.app.config.update(TESTING=True)
+        client = flask_app.app.test_client()
+
+        response = client.get("/api/tests")
+
+        payload = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(len(payload["tests"]), 55)
+        self.assertEqual(payload["tests"][0]["id"], "TC-001")
+        self.assertIn("description", payload["tests"][0])
+
+    def test_run_tests_api_runs_all_or_one_test_case(self) -> None:
+        flask_app.app.config.update(TESTING=True)
+        client = flask_app.app.test_client()
+        result = {
+            "ok": True,
+            "results": {"test_example": "passed"},
+            "output": "test_example (...) ... ok",
+        }
+
+        with patch.object(flask_app, "run_unittest_command", return_value=result) as runner:
+            all_response = client.post("/api/tests/run", json={})
+            one_response = client.post(
+                "/api/tests/run", json={"test_name": "test_example"}
+            )
+
+        self.assertEqual(all_response.status_code, 200)
+        self.assertEqual(one_response.status_code, 200)
+        self.assertEqual(one_response.get_json()["results"]["test_example"], "passed")
+        runner.assert_any_call(None)
+        runner.assert_any_call("test_example")
 
     def test_upload_files_saves_supported_files_and_reports_rejections(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
