@@ -49,6 +49,12 @@ Quick syntax check for all Python files:
 python -m py_compile app.py report_runner.py parse_broker_reports.py validation.py stock_mapping.py poems_parser.py output_helpers.py interactive_brokers_parser.py file_helpers.py constants.py chart_helpers.py
 ```
 
+Run the automated test suite:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
 ## File Map
 
 - `app.py`: Flask web server for the Portfolio Tracker UI, upload API, and report API.
@@ -66,6 +72,8 @@ python -m py_compile app.py report_runner.py parse_broker_reports.py validation.
 - `output_helpers.py`: Writes dated CSV output files.
 - `validation.py`: Prints duplicate full-row warnings.
 - `stock_mapping.csv`: User-editable stock-to-sector/geography mapping.
+- `tests/test_project.py`: Automated unittest coverage for parser helpers, broker parsers, report workflow helpers, output helpers, stock mapping, chart aggregation, validation output, and Flask routes.
+- `testapp.md`: Test case catalogue with each test's description and expected observed output.
 
 ## Data Contracts
 
@@ -102,6 +110,8 @@ Do not commit broker exports or generated outputs. `.gitignore` already excludes
 ## Coding Guidelines
 
 - Prefer small, direct changes that follow the current module boundaries.
+- Use a TDD approach for new features: add or update the corresponding test case first, confirm it captures the intended behavior, then implement the feature.
+- All new features and behavior changes should have corresponding automated test cases unless there is a clear documented reason they cannot be tested.
 - Implement exception handling where it is needed, especially around file input, parsing, and output writing. Error messages should be user-friendly and actionable rather than raw technical tracebacks.
 - Add or preserve docstrings for all functions, including new helper functions.
 - Add or preserve a paragraph of comments at the top of every Python file describing what that file is about and which functions or constants it contains.
@@ -113,14 +123,21 @@ Do not commit broker exports or generated outputs. `.gitignore` already excludes
 - Keep filesystem path and discovery logic inside `file_helpers.py`.
 - Avoid broad refactors unless needed for the requested change.
 - Keep all Markdown documentation up to date when implementing changes,
-  especially `README.md`, `PYTHON_FILES.md`, and this `CLAUDE.md` guidance.
+  especially `README.md`, `PYTHON_FILES.md`, `testapp.md`, and this `CLAUDE.md` guidance.
   If behavior, commands, dependencies, file structure, or user workflows change,
   update the relevant Markdown files in the same change.
+- Keep `testapp.md` updated whenever tests are added, removed, renamed, or materially changed. Each catalogue entry should include the test case description and expected observed output.
 - If adding new output files, update `README.md` and `.gitignore` if appropriate.
 
 ## Verification
 
 For low-risk edits, run `python -m py_compile` on the touched Python files.
+
+For all feature work and parser behavior changes, run:
+
+```powershell
+python -m unittest discover -s tests -v
+```
 
 For parser or chart behavior changes, run:
 
