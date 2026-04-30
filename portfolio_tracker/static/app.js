@@ -1,5 +1,8 @@
 const runButton = document.querySelector("#run-report");
 const showUploadButton = document.querySelector("#show-upload");
+const deleteBrokerFilesButton = document.querySelector("#delete-broker-files");
+const deleteOutputFilesButton = document.querySelector("#delete-output-files");
+const clearScreenButton = document.querySelector("#clear-screen");
 const uploadPanel = document.querySelector("#upload-panel");
 const uploadForm = document.querySelector("#upload-form");
 const uploadSubmitButton = document.querySelector("#upload-submit");
@@ -61,6 +64,13 @@ function setStatus(message) {
 function setButtonsDisabled(disabled) {
   runButton.disabled = disabled;
   uploadSubmitButton.disabled = disabled;
+  deleteBrokerFilesButton.disabled = disabled;
+  deleteOutputFilesButton.disabled = disabled;
+  clearScreenButton.disabled = disabled;
+}
+
+function confirmAction(message) {
+  return window.confirm(message);
 }
 
 function formatUploadResult(data) {
@@ -181,6 +191,58 @@ function renderTable(elementId, tableData) {
   container.appendChild(table);
 }
 
+function clearScreen() {
+  document.querySelector("#poems-count").textContent = "0";
+  document.querySelector("#ib-count").textContent = "0";
+  document.querySelector("#transaction-count").textContent = "0";
+  document.querySelector("#position-count").textContent = "0";
+
+  renderFileList("#poems-files", []);
+  renderFileList("#ib-files", []);
+  renderCharts([], Date.now().toString());
+  renderLinks("#csv-links", []);
+  renderTable("#transactions-table", { columns: [], rows: [], total_rows: 0 });
+  renderTable("#positions-table", { columns: [], rows: [], total_rows: 0 });
+
+  document.querySelector("#transaction-caption").textContent = "";
+  document.querySelector("#position-caption").textContent = "";
+  document.querySelector("#console-output").textContent =
+    "Run the report to display parser output here.";
+  setStatus("Ready");
+}
+
+async function deleteFiles(endpoint, runningStatus, successMessage, afterDelete = null) {
+  setButtonsDisabled(true);
+  setStatus(runningStatus);
+
+  try {
+    const response = await fetch(endpoint, { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "The delete request could not complete.");
+    }
+
+    const failedCount = data.failed_count || 0;
+    const statusMessage = `${successMessage} Deleted ${data.deleted_count} file(s).`;
+    if (afterDelete) {
+      afterDelete(data);
+    }
+    if (failedCount) {
+      document.querySelector("#console-output").textContent =
+        `${statusMessage} ${failedCount} file(s) could not be deleted because they are still in use. Close the file or restart the app, then try again.`;
+      setStatus("Partial");
+    } else {
+      document.querySelector("#console-output").textContent = statusMessage;
+      setStatus("Complete");
+    }
+  } catch (error) {
+    setStatus("Failed");
+    document.querySelector("#console-output").textContent = error.message;
+  } finally {
+    setButtonsDisabled(false);
+  }
+}
+
 async function runReport() {
   setButtonsDisabled(true);
   setStatus("Running");
@@ -258,5 +320,48 @@ showUploadButton.addEventListener("click", () => {
   uploadPanel.hidden = !uploadPanel.hidden;
 });
 runButton.addEventListener("click", runReport);
+deleteBrokerFilesButton.addEventListener("click", () => {
+  if (!confirmAction("Delete all files in the POEMS and Interactive Brokers folders?")) {
+    return;
+  }
+
+  deleteFiles(
+    "/api/delete-broker-files",
+    "Deleting broker files",
+    "Deleted POEMS and Interactive Brokers files.",
+    () => {
+      document.querySelector("#poems-count").textContent = "0";
+      document.querySelector("#ib-count").textContent = "0";
+      renderFileList("#poems-files", []);
+      renderFileList("#ib-files", []);
+    }
+  );
+});
+deleteOutputFilesButton.addEventListener("click", () => {
+  if (!confirmAction("Delete all files in the Output folder?")) {
+    return;
+  }
+
+  deleteFiles(
+    "/api/delete-output-files",
+    "Deleting output files",
+    "Deleted Output folder files.",
+    (data) => {
+      const failedFiles = data.result?.failed_files || [];
+      const remainingFiles = failedFiles.map((failure) => failure.file);
+      renderLinks(
+        "#csv-links",
+        remainingFiles.filter((file) => file.toLowerCase().endsWith(".csv"))
+      );
+    }
+  );
+});
+clearScreenButton.addEventListener("click", () => {
+  if (!confirmAction("Clear all data and visualizations from the screen?")) {
+    return;
+  }
+
+  clearScreen();
+});
 uploadForm.addEventListener("submit", uploadFiles);
 document.addEventListener("DOMContentLoaded", runReport);

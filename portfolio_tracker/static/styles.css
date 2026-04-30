@@ -8,6 +8,8 @@
   --accent: #0f766e;
   --accent-dark: #115e59;
   --warn: #b45309;
+  --danger: #b42318;
+  --danger-dark: #8a1c14;
 }
 
 * {
@@ -59,6 +61,14 @@ button:hover,
   background: var(--accent-dark);
 }
 
+.danger-button {
+  background: var(--danger);
+}
+
+.danger-button:hover {
+  background: var(--danger-dark);
+}
+
 button:disabled {
   cursor: wait;
   opacity: 0.65;
@@ -78,13 +88,39 @@ button:disabled {
 
 .header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+  justify-content: flex-end;
+}
+
+.maintenance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.app-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 auto;
+  max-width: 1400px;
+  padding: 0 32px 40px;
+}
+
+.secondary-link {
+  background: #475467;
+}
+
+.secondary-link:hover {
+  background: #344054;
 }
 
 main {
   margin: 0 auto;
   max-width: 1400px;
-  padding: 24px 32px 40px;
+  padding: 24px 32px 24px;
 }
 
 .status-row,
@@ -397,13 +433,20 @@ pre {
   }
 
   .header-actions,
+  .maintenance-actions,
   .upload-form {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  main {
+  main,
+  .app-footer {
     padding: 16px;
+  }
+
+  .app-footer {
+    display: grid;
+    padding-top: 0;
   }
 
   .status-row,

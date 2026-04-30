@@ -20,7 +20,8 @@ def clean_column_name(column: str) -> str:
 
 def find_sheet_name(workbook_path: Path, prefix: str) -> str:
     """Return the first Excel sheet name that starts with the given prefix."""
-    sheet_names = pd.ExcelFile(workbook_path).sheet_names
+    with pd.ExcelFile(workbook_path) as workbook:
+        sheet_names = workbook.sheet_names
     matches = [name for name in sheet_names if name.lower().startswith(prefix.lower())]
     if not matches:
         raise ValueError(

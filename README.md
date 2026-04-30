@@ -159,7 +159,21 @@ Click `Upload Files` to add new broker exports from the web app:
 - Interactive Brokers uploads accept `.csv` files and save them to the sibling `Interactive Brokers` folder
 - After a successful upload, the web app automatically re-runs the report using all files in both broker folders
 
-Click `Application Testing` to open the automated test page. The page lists
+The maintenance buttons at the bottom of the web app help reset local files and
+the browser view:
+
+- `Delete Broker Files` asks for confirmation, deletes files from the sibling
+  `POEMS` and `Interactive Brokers` folders, and updates only the input-file
+  counts and lists. Existing tables, CSV links, and charts remain visible.
+- `Delete Output Files` asks for confirmation, deletes files from the sibling
+  `Output` folder, and updates the `Output CSV Files` section. Existing tables
+  and chart images remain visible until you run another report or clear the
+  screen.
+- `Clear Screen` asks for confirmation and clears all displayed counts, input
+  lists, CSV links, charts, tables, captions, and console text. It does not
+  delete any files.
+
+Click `Application Testing` at the bottom of the page to open the automated test page. The page lists
 the catalogued test cases from `docs/testapp.md`, lets you run each test
 individually, and includes a `Run All Tests` button with a pass-count summary.
 

@@ -5,7 +5,7 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | File | Purpose |
 | --- | --- |
 | `app.py` | Project-root Flask launcher that imports `portfolio_tracker.web`. |
-| `portfolio_tracker/web.py` | Flask web server. Serves the Portfolio Tracker UI and Application Testing page, handles broker file uploads, runs the parser workflow and automated tests through API endpoints, and exposes generated output files. |
+| `portfolio_tracker/web.py` | Flask web server. Serves the Portfolio Tracker UI and Application Testing page, handles broker file uploads, cleanup requests, report runs, automated tests, static asset versioning, and generated output files. |
 | `portfolio_tracker/parse_broker_reports.py` | Main command-line entry point. Parses CLI arguments, runs the shared report workflow, and shows user-friendly errors. |
 | `portfolio_tracker/report_runner.py` | Shared report workflow for the CLI and Flask app. Checks broker input folders, combines POEMS and Interactive Brokers dataframes, prints previews and duplicate warnings, saves CSV/chart outputs, and serializes full web table response data. |
 | `portfolio_tracker/constants.py` | Defines shared paths, supported file extensions, and the standard transaction and position dataframe column schemas. |
@@ -24,7 +24,7 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | --- | --- |
 | `portfolio_tracker/templates/index.html` | Main Portfolio Tracker web page. |
 | `portfolio_tracker/templates/application_testing.html` | Application Testing web page. |
-| `portfolio_tracker/static/app.js` | Frontend behavior for report upload, report execution, charts, CSV links, and tables. |
+| `portfolio_tracker/static/app.js` | Frontend behavior for upload, report execution, cleanup confirmations, delete-result UI updates, charts, CSV links, and tables. |
 | `portfolio_tracker/static/testing.js` | Frontend behavior for listing, running, and displaying application test results. |
 | `portfolio_tracker/static/styles.css` | Shared web app styling. |
 | `data/stock_mapping.csv` | Editable stock-to-sector/geography mapping used for pie chart enrichment. |

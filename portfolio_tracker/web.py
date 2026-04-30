@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 import re
+import gc
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request, send_from_directory
@@ -31,6 +33,7 @@ app = Flask(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TEST_CATALOG_PATH = PROJECT_ROOT / "docs" / "testapp.md"
 TESTS_PATH = PROJECT_ROOT / "tests"
+STATIC_PATH = PROJECT_ROOT / "portfolio_tracker" / "static"
 
 
 UPLOAD_TARGETS = {
@@ -47,6 +50,15 @@ UPLOAD_TARGETS = {
 }
 
 
+def get_static_version() -> int:
+    """Return a cache-busting version for frontend assets."""
+    asset_paths = [
+        STATIC_PATH / "app.js",
+        STATIC_PATH / "styles.css",
+    ]
+    return max(int(path.stat().st_mtime) for path in asset_paths if path.exists())
+
+
 @app.get("/")
 def index():
     """Render the Portfolio Tracker web app."""
@@ -54,6 +66,7 @@ def index():
         "index.html",
         default_root_path=str(DEFAULT_BROKER_ROOT_PATH),
         output_path=str(DEFAULT_OUTPUT_PATH),
+        static_version=get_static_version(),
     )
 
 
@@ -215,6 +228,84 @@ def run_report_api():
         )
 
     return jsonify(report)
+
+
+def delete_files_in_folder(folder_path: Path) -> dict[str, object]:
+    """Delete files under a configured folder without removing the folder itself."""
+    ensure_folder_exists(folder_path)
+    deleted_files: list[str] = []
+    failed_files: list[dict[str, str]] = []
+
+    gc.collect()
+
+    for path in sorted(folder_path.rglob("*")):
+        if not path.is_file():
+            continue
+
+        relative_path = str(path.relative_to(folder_path))
+        last_error: OSError | None = None
+        for _ in range(3):
+            try:
+                path.unlink()
+                deleted_files.append(relative_path)
+                last_error = None
+                break
+            except OSError as error:
+                last_error = error
+                gc.collect()
+                time.sleep(0.2)
+
+        if last_error is not None:
+            failed_files.append({"file": relative_path, "error": str(last_error)})
+
+    return {
+        "folder": str(folder_path),
+        "deleted_count": len(deleted_files),
+        "deleted_files": deleted_files,
+        "failed_count": len(failed_files),
+        "failed_files": failed_files,
+    }
+
+
+@app.post("/api/delete-broker-files")
+def delete_broker_files_api():
+    """Delete uploaded source files from the configured broker input folders."""
+    try:
+        results = {
+            "poems": delete_files_in_folder(DEFAULT_POEMS_PATH),
+            "interactive_brokers": delete_files_in_folder(
+                DEFAULT_INTERACTIVE_BROKERS_PATH
+            ),
+        }
+    except OSError as error:
+        return jsonify({"error": str(error)}), 500
+
+    deleted_count = sum(result["deleted_count"] for result in results.values())
+    failed_count = sum(result["failed_count"] for result in results.values())
+    return jsonify(
+        {
+            "deleted_count": deleted_count,
+            "failed_count": failed_count,
+            "results": results,
+        }
+    )
+
+
+@app.post("/api/delete-output-files")
+def delete_output_files_api():
+    """Delete generated files from the configured Output folder."""
+    try:
+        result = delete_files_in_folder(DEFAULT_OUTPUT_PATH)
+    except OSError as error:
+        return jsonify({"error": str(error)}), 500
+
+    return jsonify(
+        {
+            "deleted_count": result["deleted_count"],
+            "failed_count": result["failed_count"],
+            "result": result,
+        }
+    )
 
 
 @app.post("/api/upload-files")

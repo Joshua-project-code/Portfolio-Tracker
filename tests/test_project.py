@@ -1102,6 +1102,50 @@ class FlaskAppTests(unittest.TestCase):
             self.assertEqual(payload["error"], "No supported files were uploaded.")
             self.assertEqual(payload["rejected_files"], ["notes.txt is not a supported POEMS file."])
 
+    def test_delete_broker_files_api_removes_files_from_source_folders(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            poems_folder = root / "POEMS"
+            ib_folder = root / "Interactive Brokers"
+            poems_folder.mkdir()
+            ib_folder.mkdir()
+            (poems_folder / "statement.xlsx").write_text("workbook", encoding="utf-8")
+            (ib_folder / "activity.csv").write_text("csv", encoding="utf-8")
+
+            flask_app.app.config.update(TESTING=True)
+            client = flask_app.app.test_client()
+
+            with patch.object(flask_app, "DEFAULT_POEMS_PATH", poems_folder):
+                with patch.object(flask_app, "DEFAULT_INTERACTIVE_BROKERS_PATH", ib_folder):
+                    response = client.post("/api/delete-broker-files")
+
+            payload = response.get_json()
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(payload["deleted_count"], 2)
+            self.assertFalse((poems_folder / "statement.xlsx").exists())
+            self.assertFalse((ib_folder / "activity.csv").exists())
+            self.assertTrue(poems_folder.is_dir())
+            self.assertTrue(ib_folder.is_dir())
+
+    def test_delete_output_files_api_removes_files_from_output_folder(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_folder = Path(temp_dir) / "Output"
+            output_folder.mkdir()
+            (output_folder / "positions.csv").write_text("positions", encoding="utf-8")
+            (output_folder / "chart.png").write_text("chart", encoding="utf-8")
+
+            flask_app.app.config.update(TESTING=True)
+            client = flask_app.app.test_client()
+
+            with patch.object(flask_app, "DEFAULT_OUTPUT_PATH", output_folder):
+                response = client.post("/api/delete-output-files")
+
+            payload = response.get_json()
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(payload["deleted_count"], 2)
+            self.assertEqual(list(output_folder.iterdir()), [])
+            self.assertTrue(output_folder.is_dir())
+
     def test_run_report_api_returns_report_json_on_success(self) -> None:
         flask_app.app.config.update(TESTING=True)
         client = flask_app.app.test_client()

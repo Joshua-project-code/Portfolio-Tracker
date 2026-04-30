@@ -4,16 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Portfolio Tracker</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_version) }}">
   </head>
   <body>
     <header class="app-header">
       <div>
         <h1>Portfolio Tracker</h1>
-        <p>Broker transactions, positions, saved files, and parser messages in one view.</p>
+        <p>Upload broker files, generate portfolio reports, and review your transactions, holdings, charts, and output files in one place.</p>
       </div>
       <div class="header-actions">
-        <a class="button-link" href="{{ url_for('application_testing') }}">Application Testing</a>
         <button id="show-upload" type="button">Upload Files</button>
         <button id="run-report" type="button">Run Report</button>
       </div>
@@ -124,8 +123,18 @@
         </div>
         <pre id="console-output">Run the report to display parser output here.</pre>
       </section>
+
+      <section class="maintenance-actions" aria-label="Maintenance actions">
+        <button id="delete-broker-files" class="danger-button" type="button">Delete Broker Files</button>
+        <button id="delete-output-files" class="danger-button" type="button">Delete Output Files</button>
+        <button id="clear-screen" class="danger-button" type="button">Clear Screen</button>
+      </section>
     </main>
 
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <footer class="app-footer">
+      <a class="button-link secondary-link" href="{{ url_for('application_testing') }}">Application Testing</a>
+    </footer>
+
+    <script src="{{ url_for('static', filename='app.js', v=static_version) }}"></script>
   </body>
 </html>
