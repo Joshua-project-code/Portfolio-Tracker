@@ -212,7 +212,7 @@ main {
 }
 
 .chart-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr));
   padding: 16px;
 }
 
@@ -227,6 +227,8 @@ main {
   background: #ffffff;
   display: block;
   height: auto;
+  max-height: 860px;
+  object-fit: contain;
   width: 100%;
 }
 

@@ -25,10 +25,15 @@ from .poems_parser import (
 
 
 def set_matplotlib_cache_dir() -> None:
-    """Keep Matplotlib cache files inside the project workspace."""
+    """Keep Matplotlib cache files inside the workspace and use a non-GUI backend."""
     os.environ.setdefault(
         "MPLCONFIGDIR", str(Path(__file__).resolve().parent.parent / ".matplotlib-cache")
     )
+    os.environ.setdefault("MPLBACKEND", "Agg")
+
+    import matplotlib
+
+    matplotlib.use("Agg", force=True)
 
 
 def build_monthly_position_totals(
@@ -210,10 +215,10 @@ def save_position_distribution_pie_chart(
         return
 
     currencies = totals["currency"].dropna().unique()
-    fig, axes = plt.subplots(1, len(currencies), figsize=(7 * len(currencies), 7))
+    fig, axes = plt.subplots(1, len(currencies), figsize=(8.5 * len(currencies), 8.5))
     if len(currencies) == 1:
         axes = [axes]
-    fig.subplots_adjust(left=0.06, right=0.94, top=0.86, bottom=0.22, wspace=0.35)
+    fig.subplots_adjust(left=0.05, right=0.95, top=0.86, bottom=0.28, wspace=0.35)
 
     for axis, currency in zip(axes, currencies):
         currency_totals = totals[totals["currency"] == currency]
@@ -223,11 +228,12 @@ def save_position_distribution_pie_chart(
         wedges, _, _ = axis.pie(
             currency_totals["market_value"],
             autopct="%1.1f%%",
-            pctdistance=0.72,
+            pctdistance=0.70,
             startangle=90,
-            radius=0.85,
+            radius=1.08,
+            textprops={"fontsize": 11},
         )
-        axis.set_title(f"{currency}")
+        axis.set_title(f"{currency}", fontsize=14)
         axis.set_aspect("equal")
 
         axis.legend(
@@ -235,12 +241,13 @@ def save_position_distribution_pie_chart(
             currency_totals[category_column],
             title=category_column.replace("_", " ").title(),
             loc="upper center",
-            bbox_to_anchor=(0.5, -0.08),
-            fontsize=8,
+            bbox_to_anchor=(0.5, -0.12),
+            fontsize=11,
+            title_fontsize=12,
         )
 
-    fig.suptitle(chart_title)
-    plt.savefig(chart_file, dpi=150, bbox_inches="tight")
+    fig.suptitle(chart_title, fontsize=16)
+    plt.savefig(chart_file, dpi=150)
     plt.close()
 
     print(f"{action} {chart_title.lower()} chart: {chart_file}")

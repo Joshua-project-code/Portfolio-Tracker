@@ -19,6 +19,7 @@ from portfolio_tracker.chart_helpers import (
     build_monthly_transaction_totals,
     save_monthly_position_chart,
     save_position_distribution_pie_chart,
+    set_matplotlib_cache_dir,
 )
 from portfolio_tracker.constants import POSITION_COLUMNS, TRANSACTION_COLUMNS
 from portfolio_tracker.file_helpers import (
@@ -618,6 +619,13 @@ class StockCodeMappingTests(unittest.TestCase):
 
 
 class ChartHelperTests(unittest.TestCase):
+    def test_set_matplotlib_cache_dir_uses_non_gui_backend(self) -> None:
+        set_matplotlib_cache_dir()
+
+        import matplotlib
+
+        self.assertEqual(matplotlib.get_backend().lower(), "agg")
+
     def test_build_monthly_transaction_totals_groups_by_month_broker_and_currency(self) -> None:
         transactions = pd.DataFrame(
             {
@@ -697,6 +705,34 @@ class ChartHelperTests(unittest.TestCase):
                 )
 
             self.assertIn("Skipping sector distribution chart", output.getvalue())
+
+    def test_save_position_distribution_pie_chart_uses_large_readable_canvas(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir)
+            positions = pd.DataFrame(
+                {
+                    "currency": ["USD", "USD", "USD"],
+                    "sector": ["Technology", "Healthcare", "Financials"],
+                    "market_value": [600, 250, 150],
+                }
+            )
+
+            save_position_distribution_pie_chart(
+                positions,
+                "sector",
+                "Sector Distribution",
+                "sector_distribution",
+                output_path,
+            )
+
+            from matplotlib import image as mpimg
+
+            chart_file = next(output_path.glob("sector_distribution_*.png"))
+            chart_image = mpimg.imread(chart_file)
+            height, width = chart_image.shape[:2]
+
+            self.assertGreaterEqual(width, 1000)
+            self.assertGreaterEqual(height, 900)
 
 
 class OutputAndValidationTests(unittest.TestCase):
