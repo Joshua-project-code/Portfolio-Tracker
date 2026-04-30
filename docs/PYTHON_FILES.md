@@ -17,3 +17,16 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `portfolio_tracker/poems_parser.py` | Parses POEMS Excel workbooks into the common transaction and position dataframe schemas. It also infers missing POEMS position stock codes from transaction rows where possible. |
 | `portfolio_tracker/interactive_brokers_parser.py` | Parses Interactive Brokers activity CSV files, extracting trades, open positions, and instrument descriptions into the common dataframe schemas. |
 | `portfolio_tracker/validation.py` | Contains validation/reporting helpers, currently used to print full-row duplicate records in the generated dataframes. |
+
+## Related Non-Python Files
+
+| File | Purpose |
+| --- | --- |
+| `portfolio_tracker/templates/index.html` | Main Portfolio Tracker web page. |
+| `portfolio_tracker/templates/application_testing.html` | Application Testing web page. |
+| `portfolio_tracker/static/app.js` | Frontend behavior for report upload, report execution, charts, CSV links, and tables. |
+| `portfolio_tracker/static/testing.js` | Frontend behavior for listing, running, and displaying application test results. |
+| `portfolio_tracker/static/styles.css` | Shared web app styling. |
+| `data/stock_mapping.csv` | Editable stock-to-sector/geography mapping used for pie chart enrichment. |
+| `docs/testapp.md` | Test case catalogue consumed by the Application Testing page. |
+| `requirements.txt` | Python dependencies for running the app, parser, and tests. |

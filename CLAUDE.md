@@ -22,7 +22,7 @@ against all available files.
 Install dependencies:
 
 ```powershell
-python -m pip install pandas openpyxl matplotlib flask
+python -m pip install -r requirements.txt
 ```
 
 Run the web app from the project folder:
@@ -58,6 +58,7 @@ python -m unittest discover -s tests -v
 ## File Map
 
 - `app.py`: Project-root Flask launcher that imports `portfolio_tracker.web`.
+- `requirements.txt`: Runtime and test Python dependencies.
 - `portfolio_tracker/web.py`: Flask web server for the Portfolio Tracker UI, Application Testing page, upload API, report API, and test APIs.
 - `portfolio_tracker/parse_broker_reports.py`: Main CLI entry point and user-friendly error handling.
 - `portfolio_tracker/report_runner.py`: Shared report workflow used by the CLI and web app, including broker file discovery, dataframe construction, console preview output, CSV/chart generation, and web response serialization.
@@ -112,7 +113,7 @@ Vibe Coding/
 |   +-- docs/
 ```
 
-Do not commit broker exports or generated outputs. `.gitignore` already excludes local broker folders, `Output`, Python caches, virtual environments, and Matplotlib cache files.
+Do not commit broker exports or generated outputs. `.gitignore` already excludes local broker folders, `Output`, root-level `stock_code_mapping.csv`, Python caches, virtual environments, and Matplotlib cache files.
 
 ## Coding Guidelines
 
@@ -138,7 +139,11 @@ Do not commit broker exports or generated outputs. `.gitignore` already excludes
 
 ## Verification
 
-For low-risk edits, run `python -m py_compile` on the touched Python files.
+For low-risk edits, run a syntax check on the package:
+
+```powershell
+python -m compileall app.py portfolio_tracker tests
+```
 
 For all feature work and parser behavior changes, run:
 

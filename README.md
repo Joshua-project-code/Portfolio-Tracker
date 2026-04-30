@@ -36,6 +36,38 @@ Vibe Coding/
 |   +-- docs/
 ```
 
+## Project Structure
+
+The repository is organized so the root stays small:
+
+```text
+Portfolio Tracker/
++-- app.py                         # Flask launcher
++-- portfolio_tracker/             # Application package
+|   +-- static/                     # Web JavaScript and CSS
+|   +-- templates/                  # Flask templates
++-- data/
+|   +-- stock_mapping.csv           # Editable sector/geography mapping
++-- docs/
+|   +-- PYTHON_FILES.md             # Module reference
+|   +-- testapp.md                  # Test case catalogue
++-- tests/
+|   +-- test_project.py             # Automated test suite
++-- stock_code_mapping.csv          # Generated local stock-code/name history
+```
+
+## Generated Files
+
+The parser writes generated files that should not be committed:
+
+- `../Output/transactions_YYYY-MM-DD.csv`
+- `../Output/positions_YYYY-MM-DD.csv`
+- `../Output/*.png` chart files
+- `stock_code_mapping.csv` in the project folder
+
+The committed editable mapping is `data/stock_mapping.csv`. It is separate from
+the generated `stock_code_mapping.csv`.
+
 ### POEMS Files
 
 Upload or copy POEMS Excel files into the `POEMS` folder.
@@ -81,18 +113,18 @@ The parser uses this mapping to create investment-position pie charts. If you
 want to change a stock's sector or geography, or if a new stock appears as
 `Unmapped`, update `data/stock_mapping.csv` directly.
 
-This file is separate from the generated project-root `stock_code_mapping.csv`, which
-is produced automatically from broker reports and should be treated as parser
-output rather than a sector/geography classification file.
+This file is separate from the generated project-root `stock_code_mapping.csv`,
+which is produced automatically from broker reports and should be treated as
+parser output rather than a sector/geography classification file.
 
 ## Install Dependencies
 
-The script and web app require pandas, openpyxl, matplotlib, and Flask.
+The script, web app, and tests require pandas, openpyxl, matplotlib, and Flask.
 
 Run:
 
 ```powershell
-python -m pip install pandas openpyxl matplotlib flask
+python -m pip install -r requirements.txt
 ```
 
 ## Run The Web App
@@ -165,15 +197,16 @@ press Enter, the script continues without that broker's data for the run.
 Example output files:
 
 ```text
-Output/
-+-- transactions_2026-04-28.csv
-+-- positions_2026-04-28.csv
-+-- investment_positions_by_month_2026-04-28.png
-+-- transactions_by_month_2026-04-28.png
-+-- sector_distribution_2026-04-28.png
-+-- geography_distribution_2026-04-28.png
-Portfolio Tracker/
-+-- stock_code_mapping.csv
+Vibe Coding/
++-- Output/
+|   +-- transactions_2026-04-28.csv
+|   +-- positions_2026-04-28.csv
+|   +-- investment_positions_by_month_2026-04-28.png
+|   +-- transactions_by_month_2026-04-28.png
+|   +-- sector_distribution_2026-04-28.png
+|   +-- geography_distribution_2026-04-28.png
++-- Portfolio Tracker/
+|   +-- stock_code_mapping.csv
 ```
 
 ## Optional Root Folder Argument
