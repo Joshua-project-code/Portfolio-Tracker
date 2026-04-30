@@ -11,7 +11,7 @@ The main workflow is:
 1. Read broker files from sibling folders named `POEMS` and `Interactive Brokers`.
 2. Parse transactions and current positions into shared schemas.
 3. Print duplicate-row warnings and table previews.
-4. Save dated CSV files and PNG charts into the sibling `Output` folder.
+4. Save dated CSV files, Seaborn PNG charts, and Plotly HTML charts into the sibling `Output` folder.
 
 The Flask web app can also upload new POEMS workbook files and Interactive
 Brokers CSV files into those sibling folders, then re-run the parser workflow
@@ -63,9 +63,9 @@ python -m unittest discover -s tests -v
 - `requirements.txt`: Runtime and test Python dependencies.
 - `portfolio_tracker/web.py`: Flask web server for the Portfolio Tracker UI, Application Testing page, upload API, report API, cleanup APIs, static asset versioning, and test APIs.
 - `portfolio_tracker/parse_broker_reports.py`: Main CLI entry point and user-friendly error handling.
-- `portfolio_tracker/report_runner.py`: Shared report workflow used by the CLI and web app, including broker file discovery, dataframe construction, console preview output, CSV/chart generation, and web response serialization.
+- `portfolio_tracker/report_runner.py`: Shared report workflow used by the CLI and web app, including broker file discovery, dataframe construction, console preview output, CSV/chart generation, chart-set response serialization, and web table serialization.
 - `portfolio_tracker/templates/index.html`: Main web app page rendered by Flask.
-- `portfolio_tracker/static/app.js`: Frontend upload, report, cleanup confirmation, delete-result handling, and rendering logic.
+- `portfolio_tracker/static/app.js`: Frontend upload, report, Seaborn/Plotly chart-library toggle, cleanup confirmation, delete-result handling, and rendering logic.
 - `portfolio_tracker/static/styles.css`: Web app styles.
 - `portfolio_tracker/constants.py`: Shared paths, extensions, and canonical output schemas.
 - `portfolio_tracker/file_helpers.py`: File discovery, folder creation, sheet lookup, column cleanup, and broker-name inference.
@@ -73,7 +73,7 @@ python -m unittest discover -s tests -v
 - `portfolio_tracker/interactive_brokers_parser.py`: Interactive Brokers CSV section, transaction, and position parsing.
 - `portfolio_tracker/stock_mapping.py`: Loads `data/stock_mapping.csv` and adds sector/geography metadata to positions.
 - `portfolio_tracker/stock_code_mapping.py`: Builds and persists project-root `stock_code_mapping.csv`, mapping stock codes to latest stock names and retaining old stock names when names change.
-- `portfolio_tracker/chart_helpers.py`: Builds monthly summaries and saves line/pie charts.
+- `portfolio_tracker/chart_helpers.py`: Builds monthly summaries and saves Seaborn and Plotly line/pie charts.
 - `portfolio_tracker/output_helpers.py`: Writes dated CSV output files.
 - `portfolio_tracker/validation.py`: Prints duplicate full-row warnings.
 - `data/stock_mapping.csv`: User-editable stock-to-sector/geography mapping.

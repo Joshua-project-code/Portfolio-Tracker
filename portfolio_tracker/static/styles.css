@@ -218,6 +218,7 @@ main {
   align-items: center;
   border-bottom: 1px solid var(--line);
   display: flex;
+  gap: 12px;
   justify-content: space-between;
   padding: 14px 16px;
 }
@@ -225,6 +226,31 @@ main {
 .panel-heading h2 {
   font-size: 18px;
   margin: 0;
+}
+
+.chart-toggle {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.toggle-button {
+  background: #ffffff;
+  border-radius: 0;
+  color: var(--accent-dark);
+  min-width: 104px;
+  padding: 8px 12px;
+}
+
+.toggle-button:hover,
+.toggle-button.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.toggle-button:disabled {
+  cursor: wait;
 }
 
 .file-columns {
@@ -248,7 +274,7 @@ main {
 }
 
 .chart-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr));
+  grid-template-columns: 1fr;
   padding: 16px;
 }
 
@@ -263,8 +289,15 @@ main {
   background: #ffffff;
   display: block;
   height: auto;
-  max-height: 860px;
   object-fit: contain;
+  width: 100%;
+}
+
+.chart-grid iframe {
+  background: #ffffff;
+  border: 0;
+  display: block;
+  height: 680px;
   width: 100%;
 }
 
@@ -457,6 +490,7 @@ pre {
   }
 
   .testing-toolbar,
+  .panel-heading,
   .test-case-actions {
     align-items: stretch;
     flex-direction: column;

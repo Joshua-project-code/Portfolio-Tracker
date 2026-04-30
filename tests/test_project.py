@@ -17,8 +17,10 @@ from portfolio_tracker.chart_helpers import (
     aggregate_small_pie_slices,
     build_monthly_position_totals,
     build_monthly_transaction_totals,
-    save_monthly_position_chart,
-    save_position_distribution_pie_chart,
+    save_plotly_monthly_position_chart,
+    save_plotly_position_distribution_pie_chart,
+    save_seaborn_monthly_position_chart,
+    save_seaborn_position_distribution_pie_chart,
     set_matplotlib_cache_dir,
 )
 from portfolio_tracker.constants import POSITION_COLUMNS, TRANSACTION_COLUMNS
@@ -51,6 +53,7 @@ from portfolio_tracker.report_runner import (
     dataframe_table,
     find_broker_files_for_report,
     format_table_value,
+    get_generated_chart_sets,
     get_generated_output_names,
     run_report_with_console_output,
     wait_for_broker_files,
@@ -683,20 +686,20 @@ class ChartHelperTests(unittest.TestCase):
             self.assertEqual(monthly["series"].tolist(), ["interactive brokers - USD", "poems - USD"])
             self.assertEqual(monthly["market_value"].tolist(), [1550.0, 100.0])
 
-    def test_save_monthly_position_chart_skips_empty_data(self) -> None:
+    def test_save_seaborn_monthly_position_chart_skips_empty_data(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output = io.StringIO()
             with redirect_stdout(output):
-                save_monthly_position_chart(pd.DataFrame(), Path(temp_dir))
+                save_seaborn_monthly_position_chart(pd.DataFrame(), Path(temp_dir))
 
-            self.assertIn("Skipping line chart", output.getvalue())
+            self.assertIn("Skipping Seaborn line chart", output.getvalue())
             self.assertEqual(list(Path(temp_dir).iterdir()), [])
 
-    def test_save_position_distribution_pie_chart_skips_empty_data(self) -> None:
+    def test_save_seaborn_position_distribution_pie_chart_skips_empty_data(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output = io.StringIO()
             with redirect_stdout(output):
-                save_position_distribution_pie_chart(
+                save_seaborn_position_distribution_pie_chart(
                     pd.DataFrame(),
                     "sector",
                     "Sector Distribution",
@@ -704,9 +707,9 @@ class ChartHelperTests(unittest.TestCase):
                     Path(temp_dir),
                 )
 
-            self.assertIn("Skipping sector distribution chart", output.getvalue())
+            self.assertIn("Skipping Seaborn sector distribution chart", output.getvalue())
 
-    def test_save_position_distribution_pie_chart_uses_large_readable_canvas(self) -> None:
+    def test_save_seaborn_position_distribution_pie_chart_uses_large_readable_canvas(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir)
             positions = pd.DataFrame(
@@ -717,7 +720,7 @@ class ChartHelperTests(unittest.TestCase):
                 }
             )
 
-            save_position_distribution_pie_chart(
+            save_seaborn_position_distribution_pie_chart(
                 positions,
                 "sector",
                 "Sector Distribution",
@@ -727,12 +730,88 @@ class ChartHelperTests(unittest.TestCase):
 
             from matplotlib import image as mpimg
 
-            chart_file = next(output_path.glob("sector_distribution_*.png"))
+            chart_file = next(output_path.glob("seaborn_sector_distribution_*.png"))
             chart_image = mpimg.imread(chart_file)
             height, width = chart_image.shape[:2]
 
             self.assertGreaterEqual(width, 1000)
             self.assertGreaterEqual(height, 900)
+
+    def test_save_seaborn_monthly_position_chart_creates_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir)
+            monthly_totals = pd.DataFrame(
+                {
+                    "month": [pd.Timestamp("2026-04-01"), pd.Timestamp("2026-05-01")],
+                    "series": ["poems - USD", "poems - USD"],
+                    "market_value": [1000, 1200],
+                }
+            )
+
+            save_seaborn_monthly_position_chart(monthly_totals, output_path)
+
+            self.assertTrue(next(output_path.glob("seaborn_investment_positions_by_month_*.png")).is_file())
+
+    def test_save_seaborn_position_distribution_pie_chart_creates_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir)
+            positions = pd.DataFrame(
+                {
+                    "currency": ["USD", "USD"],
+                    "sector": ["Technology", "Healthcare"],
+                    "market_value": [700, 300],
+                }
+            )
+
+            save_seaborn_position_distribution_pie_chart(
+                positions,
+                "sector",
+                "Sector Distribution",
+                "sector_distribution",
+                output_path,
+            )
+
+            self.assertTrue(next(output_path.glob("seaborn_sector_distribution_*.png")).is_file())
+
+    def test_save_plotly_monthly_position_chart_creates_html_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir)
+            monthly_totals = pd.DataFrame(
+                {
+                    "month": [pd.Timestamp("2026-04-01"), pd.Timestamp("2026-05-01")],
+                    "series": ["poems - USD", "poems - USD"],
+                    "market_value": [1000, 1200],
+                }
+            )
+
+            save_plotly_monthly_position_chart(monthly_totals, output_path)
+
+            chart_file = next(output_path.glob("plotly_investment_positions_by_month_*.html"))
+            self.assertTrue(chart_file.is_file())
+            self.assertIn("plotly", chart_file.read_text(encoding="utf-8").lower())
+
+    def test_save_plotly_position_distribution_pie_chart_creates_html_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir)
+            positions = pd.DataFrame(
+                {
+                    "currency": ["USD", "USD"],
+                    "sector": ["Technology", "Healthcare"],
+                    "market_value": [700, 300],
+                }
+            )
+
+            save_plotly_position_distribution_pie_chart(
+                positions,
+                "sector",
+                "Sector Distribution",
+                "sector_distribution",
+                output_path,
+            )
+
+            chart_file = next(output_path.glob("plotly_sector_distribution_*.html"))
+            self.assertTrue(chart_file.is_file())
+            self.assertIn("plotly", chart_file.read_text(encoding="utf-8").lower())
 
 
 class OutputAndValidationTests(unittest.TestCase):
@@ -882,22 +961,35 @@ class ReportRunnerTests(unittest.TestCase):
         self.assertEqual(format_table_value(pd.Timestamp("2026-04-01")), "2026-04-01")
         self.assertEqual(format_table_value(pd.Series([7]).iloc[0]), 7)
 
-    def test_get_generated_output_names_returns_existing_expected_files_only(self) -> None:
+    def test_get_generated_output_names_returns_existing_csv_files_only(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir)
             mapping_path = output_path / "project" / "stock_code_mapping.csv"
             mapping_path.parent.mkdir()
             today = "2026-04-30"
             (output_path / f"transactions_{today}.csv").write_text("", encoding="utf-8")
-            (output_path / f"sector_distribution_{today}.png").write_text("", encoding="utf-8")
             mapping_path.write_text("", encoding="utf-8")
 
             with patch("portfolio_tracker.report_runner.DEFAULT_OUTPUT_PATH", output_path):
                 with patch("portfolio_tracker.report_runner.DEFAULT_STOCK_CODE_MAPPING_PATH", mapping_path):
                     charts, csvs = get_generated_output_names(today)
 
-            self.assertEqual(charts, [f"sector_distribution_{today}.png"])
+            self.assertEqual(charts, [])
             self.assertEqual(csvs, [f"transactions_{today}.csv", "stock_code_mapping.csv"])
+
+    def test_get_generated_chart_sets_returns_seaborn_and_plotly_names(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir)
+            today = "2026-04-30"
+            (output_path / f"seaborn_transactions_by_month_{today}.png").write_text("", encoding="utf-8")
+            (output_path / f"plotly_transactions_by_month_{today}.html").write_text("", encoding="utf-8")
+
+            with patch("portfolio_tracker.report_runner.DEFAULT_OUTPUT_PATH", output_path):
+                chart_sets = get_generated_chart_sets(today)
+
+            self.assertNotIn("matplotlib", chart_sets)
+            self.assertEqual(chart_sets["seaborn"], [f"seaborn_transactions_by_month_{today}.png"])
+            self.assertEqual(chart_sets["plotly"], [f"plotly_transactions_by_month_{today}.html"])
 
     def test_run_report_with_console_output_includes_captured_console_text(self) -> None:
         with patch("portfolio_tracker.report_runner.run_report", return_value={"ok": True}) as run_report:
@@ -930,32 +1022,38 @@ class ReportRunnerTests(unittest.TestCase):
                         "build_monthly_position_totals",
                         return_value=pd.DataFrame(),
                     ):
-                        with patch.object(report_runner, "save_monthly_position_chart"):
-                            with patch.object(
-                                report_runner,
-                                "build_monthly_transaction_totals",
-                                return_value=pd.DataFrame(),
-                            ):
-                                with patch.object(report_runner, "save_monthly_transaction_chart"):
-                                    with patch.object(
-                                        report_runner,
-                                        "load_stock_mapping",
-                                        return_value=pd.DataFrame(
-                                            columns=["stock_name_key", "sector", "geography"]
-                                        ),
-                                    ):
-                                        with patch.object(
-                                            report_runner,
-                                            "enrich_positions_with_mapping",
-                                            return_value=pd.DataFrame(),
-                                        ):
+                        with patch.object(report_runner, "save_seaborn_monthly_position_chart"):
+                            with patch.object(report_runner, "save_plotly_monthly_position_chart"):
+                                with patch.object(
+                                    report_runner,
+                                    "build_monthly_transaction_totals",
+                                    return_value=pd.DataFrame(),
+                                ):
+                                    with patch.object(report_runner, "save_seaborn_monthly_transaction_chart"):
+                                        with patch.object(report_runner, "save_plotly_monthly_transaction_chart"):
                                             with patch.object(
                                                 report_runner,
-                                                "save_position_distribution_pie_chart",
+                                                "load_stock_mapping",
+                                                return_value=pd.DataFrame(
+                                                    columns=["stock_name_key", "sector", "geography"]
+                                                ),
                                             ):
-                                                report_runner.save_report_outputs(
-                                                    [], [], transactions, positions
-                                                )
+                                                with patch.object(
+                                                    report_runner,
+                                                    "enrich_positions_with_mapping",
+                                                    return_value=pd.DataFrame(),
+                                                ):
+                                                    with patch.object(
+                                                        report_runner,
+                                                        "save_seaborn_position_distribution_pie_chart",
+                                                    ):
+                                                        with patch.object(
+                                                            report_runner,
+                                                            "save_plotly_position_distribution_pie_chart",
+                                                        ):
+                                                            report_runner.save_report_outputs(
+                                                                [], [], transactions, positions
+                                                            )
 
             saved = pd.read_csv(output_path / "stock_code_mapping.csv")
             self.assertEqual(saved.loc[0, "stock_code"], "ACME")

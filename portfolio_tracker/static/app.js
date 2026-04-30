@@ -3,11 +3,19 @@ const showUploadButton = document.querySelector("#show-upload");
 const deleteBrokerFilesButton = document.querySelector("#delete-broker-files");
 const deleteOutputFilesButton = document.querySelector("#delete-output-files");
 const clearScreenButton = document.querySelector("#clear-screen");
+const showSeabornChartsButton = document.querySelector("#show-seaborn-charts");
+const showPlotlyChartsButton = document.querySelector("#show-plotly-charts");
 const uploadPanel = document.querySelector("#upload-panel");
 const uploadForm = document.querySelector("#upload-form");
 const uploadSubmitButton = document.querySelector("#upload-submit");
 const uploadMessage = document.querySelector("#upload-message");
 const statusText = document.querySelector("#status-text");
+let currentChartMode = "seaborn";
+let currentChartSets = {
+  seaborn: [],
+  plotly: [],
+};
+let currentChartCacheKey = "";
 
 function outputUrl(file, cacheKey = "") {
   const query = cacheKey ? `?v=${encodeURIComponent(cacheKey)}` : "";
@@ -16,6 +24,23 @@ function outputUrl(file, cacheKey = "") {
 
 function displayName(value) {
   return String(value).split("_").join(" ");
+}
+
+function chartSortValue(chart) {
+  const chartName = String(chart).toLowerCase();
+  if (chartName.includes("investment_positions_by_month")) {
+    return 1;
+  }
+  if (chartName.includes("transactions_by_month")) {
+    return 2;
+  }
+  if (chartName.includes("sector_distribution")) {
+    return 3;
+  }
+  if (chartName.includes("geography_distribution")) {
+    return 4;
+  }
+  return 99;
 }
 
 function formatDisplayValue(tableId, column, value) {
@@ -67,6 +92,8 @@ function setButtonsDisabled(disabled) {
   deleteBrokerFilesButton.disabled = disabled;
   deleteOutputFilesButton.disabled = disabled;
   clearScreenButton.disabled = disabled;
+  showSeabornChartsButton.disabled = disabled;
+  showPlotlyChartsButton.disabled = disabled;
 }
 
 function confirmAction(message) {
@@ -132,20 +159,40 @@ function renderCharts(charts, cacheKey) {
   }
 
   grid.className = "chart-grid";
-  charts.forEach((chart) => {
+  [...charts].sort((left, right) => chartSortValue(left) - chartSortValue(right)).forEach((chart) => {
     const figure = document.createElement("figure");
-    const image = document.createElement("img");
     const caption = document.createElement("figcaption");
-    image.src = outputUrl(chart, cacheKey);
-    image.alt = displayName(chart);
-    image.onerror = () => {
-      figure.classList.add("chart-error");
-      caption.textContent = `${chart} could not be loaded`;
-    };
+    if (chart.toLowerCase().endsWith(".html")) {
+      const frame = document.createElement("iframe");
+      frame.src = outputUrl(chart, cacheKey);
+      frame.title = displayName(chart);
+      frame.loading = "lazy";
+      frame.onerror = () => {
+        figure.classList.add("chart-error");
+        caption.textContent = `${chart} could not be loaded`;
+      };
+      figure.appendChild(frame);
+    } else {
+      const image = document.createElement("img");
+      image.src = outputUrl(chart, cacheKey);
+      image.alt = displayName(chart);
+      image.onerror = () => {
+        figure.classList.add("chart-error");
+        caption.textContent = `${chart} could not be loaded`;
+      };
+      figure.appendChild(image);
+    }
     caption.textContent = chart;
-    figure.append(image, caption);
+    figure.appendChild(caption);
     grid.appendChild(figure);
   });
+}
+
+function setChartMode(mode) {
+  currentChartMode = mode;
+  showSeabornChartsButton.classList.toggle("active", mode === "seaborn");
+  showPlotlyChartsButton.classList.toggle("active", mode === "plotly");
+  renderCharts(currentChartSets[mode] || [], currentChartCacheKey);
 }
 
 function renderTable(elementId, tableData) {
@@ -199,6 +246,11 @@ function clearScreen() {
 
   renderFileList("#poems-files", []);
   renderFileList("#ib-files", []);
+  currentChartSets = {
+    seaborn: [],
+    plotly: [],
+  };
+  currentChartCacheKey = Date.now().toString();
   renderCharts([], Date.now().toString());
   renderLinks("#csv-links", []);
   renderTable("#transactions-table", { columns: [], rows: [], total_rows: 0 });
@@ -262,7 +314,12 @@ async function runReport() {
 
     renderFileList("#poems-files", data.poems_files);
     renderFileList("#ib-files", data.interactive_brokers_files);
-    renderCharts(data.charts, data.generated_on || Date.now().toString());
+    currentChartSets = data.chart_sets || {
+      seaborn: data.charts || [],
+      plotly: [],
+    };
+    currentChartCacheKey = `${data.generated_on || "chart"}-${Date.now()}`;
+    renderCharts(currentChartSets[currentChartMode] || [], currentChartCacheKey);
     renderLinks("#csv-links", data.csv_files);
     renderTable("#transactions-table", data.transactions);
     renderTable("#positions-table", data.positions);
@@ -320,6 +377,12 @@ showUploadButton.addEventListener("click", () => {
   uploadPanel.hidden = !uploadPanel.hidden;
 });
 runButton.addEventListener("click", runReport);
+showSeabornChartsButton.addEventListener("click", () => {
+  setChartMode("seaborn");
+});
+showPlotlyChartsButton.addEventListener("click", () => {
+  setChartMode("plotly");
+});
 deleteBrokerFilesButton.addEventListener("click", () => {
   if (!confirmAction("Delete all files in the POEMS and Interactive Brokers folders?")) {
     return;

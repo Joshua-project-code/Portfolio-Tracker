@@ -76,7 +76,7 @@ def get_user_friendly_error_message(error: Exception) -> str:
         return (
             f"A required Python package is not installed: {missing_module}\n"
             "Please install the project dependencies with:\n"
-            "python -m pip install pandas openpyxl matplotlib flask"
+            "python -m pip install pandas openpyxl matplotlib seaborn plotly flask"
         )
 
     if error.__class__.__name__ in {"BadZipFile", "InvalidFileException"}:

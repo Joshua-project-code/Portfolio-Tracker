@@ -16,9 +16,12 @@ import pandas as pd
 from .chart_helpers import (
     build_monthly_position_totals,
     build_monthly_transaction_totals,
-    save_monthly_position_chart,
-    save_monthly_transaction_chart,
-    save_position_distribution_pie_chart,
+    save_plotly_monthly_position_chart,
+    save_plotly_monthly_transaction_chart,
+    save_plotly_position_distribution_pie_chart,
+    save_seaborn_monthly_position_chart,
+    save_seaborn_monthly_transaction_chart,
+    save_seaborn_position_distribution_pie_chart,
 )
 from .constants import (
     DEFAULT_BROKER_ROOT_PATH,
@@ -153,19 +156,35 @@ def save_report_outputs(
         DEFAULT_STOCK_CODE_MAPPING_PATH,
     )
     monthly_totals_df = build_monthly_position_totals(workbooks, csv_files)
-    save_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
+    save_seaborn_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
+    save_plotly_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
     monthly_transactions_df = build_monthly_transaction_totals(transactions_df)
-    save_monthly_transaction_chart(monthly_transactions_df, DEFAULT_OUTPUT_PATH)
+    save_seaborn_monthly_transaction_chart(monthly_transactions_df, DEFAULT_OUTPUT_PATH)
+    save_plotly_monthly_transaction_chart(monthly_transactions_df, DEFAULT_OUTPUT_PATH)
     stock_mapping_df = load_stock_mapping(DEFAULT_STOCK_MAPPING_PATH)
     mapped_positions_df = enrich_positions_with_mapping(positions_df, stock_mapping_df)
-    save_position_distribution_pie_chart(
+    save_seaborn_position_distribution_pie_chart(
         mapped_positions_df,
         "sector",
         "Sector Distribution by Currency",
         "sector_distribution",
         DEFAULT_OUTPUT_PATH,
     )
-    save_position_distribution_pie_chart(
+    save_plotly_position_distribution_pie_chart(
+        mapped_positions_df,
+        "sector",
+        "Sector Distribution by Currency",
+        "sector_distribution",
+        DEFAULT_OUTPUT_PATH,
+    )
+    save_seaborn_position_distribution_pie_chart(
+        mapped_positions_df,
+        "geography",
+        "Geography Distribution by Currency",
+        "geography_distribution",
+        DEFAULT_OUTPUT_PATH,
+    )
+    save_plotly_position_distribution_pie_chart(
         mapped_positions_df,
         "geography",
         "Geography Distribution by Currency",
@@ -200,28 +219,45 @@ def format_table_value(value: Any) -> Any:
 
 
 def get_generated_output_names(today: str) -> tuple[list[str], list[str]]:
-    """Return generated chart and CSV names that currently exist on disk."""
-    chart_names = [
-        f"investment_positions_by_month_{today}.png",
-        f"transactions_by_month_{today}.png",
-        f"sector_distribution_{today}.png",
-        f"geography_distribution_{today}.png",
-    ]
+    """Return generated CSV names and an empty legacy chart list."""
     output_csv_names = [
         f"transactions_{today}.csv",
         f"positions_{today}.csv",
     ]
 
-    existing_charts = [
-        name for name in chart_names if (DEFAULT_OUTPUT_PATH / name).exists()
-    ]
     existing_csvs = [
         name for name in output_csv_names if (DEFAULT_OUTPUT_PATH / name).exists()
     ]
     if DEFAULT_STOCK_CODE_MAPPING_PATH.exists():
         existing_csvs.append(DEFAULT_STOCK_CODE_MAPPING_PATH.name)
 
-    return existing_charts, existing_csvs
+    return [], existing_csvs
+
+
+def get_generated_chart_sets(today: str) -> dict[str, list[str]]:
+    """Return generated chart names by chart library for the given date."""
+    seaborn_chart_names = [
+        f"seaborn_investment_positions_by_month_{today}.png",
+        f"seaborn_transactions_by_month_{today}.png",
+        f"seaborn_sector_distribution_{today}.png",
+        f"seaborn_geography_distribution_{today}.png",
+    ]
+    plotly_chart_names = [
+        f"plotly_investment_positions_by_month_{today}.html",
+        f"plotly_transactions_by_month_{today}.html",
+        f"plotly_sector_distribution_{today}.html",
+        f"plotly_geography_distribution_{today}.html",
+    ]
+    seaborn_charts = [
+        name for name in seaborn_chart_names if (DEFAULT_OUTPUT_PATH / name).exists()
+    ]
+    plotly_charts = [
+        name for name in plotly_chart_names if (DEFAULT_OUTPUT_PATH / name).exists()
+    ]
+    return {
+        "seaborn": seaborn_charts,
+        "plotly": plotly_charts,
+    }
 
 
 def run_report(
@@ -255,6 +291,7 @@ def run_report(
 
     today = date.today().isoformat()
     chart_names, csv_names = get_generated_output_names(today)
+    chart_sets = get_generated_chart_sets(today)
 
     return {
         "root_path": str(root_path),
@@ -265,6 +302,7 @@ def run_report(
         "transactions": dataframe_table(transactions_df),
         "positions": dataframe_table(positions_df),
         "charts": chart_names,
+        "chart_sets": chart_sets,
         "csv_files": csv_names,
     }
 

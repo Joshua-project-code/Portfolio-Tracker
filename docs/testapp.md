@@ -50,8 +50,8 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-034 | `test_aggregate_small_pie_slices_groups_values_below_threshold_as_others` | Groups small pie slices under the threshold. | Small categories combine into an `Others` row worth `10`. |
 | TC-035 | `test_aggregate_small_pie_slices_returns_input_when_total_is_not_positive` | Avoids aggregation when total value is zero or negative. | Returns the original totals unchanged. |
 | TC-036 | `test_build_monthly_position_totals_combines_poems_and_ib_snapshots` | Builds monthly position totals from POEMS and IBKR snapshot files. | Returns broker/currency series for both sources with summed market values. |
-| TC-037 | `test_save_monthly_position_chart_skips_empty_data` | Skips position chart generation when there is no data. | Prints a skip message and creates no chart file. |
-| TC-038 | `test_save_position_distribution_pie_chart_skips_empty_data` | Skips distribution pie chart generation when positions are empty. | Prints a skip message for the requested chart. |
+| TC-037 | `test_save_seaborn_monthly_position_chart_skips_empty_data` | Skips Seaborn position chart generation when there is no data. | Prints a skip message and creates no chart file. |
+| TC-038 | `test_save_seaborn_position_distribution_pie_chart_skips_empty_data` | Skips Seaborn distribution pie chart generation when positions are empty. | Prints a skip message for the requested chart. |
 | TC-039 | `test_save_dataframe_to_csv_creates_file_without_index` | Saves a DataFrame as CSV without pandas index. | CSV contains only `a` and `1`. |
 | TC-040 | `test_save_dataframes_to_csv_creates_dated_transaction_and_position_files` | Saves both dated output CSVs. | Creates one `transactions_YYYY-MM-DD.csv` and one `positions_YYYY-MM-DD.csv`. |
 | TC-041 | `test_print_duplicate_records_message_outputs_duplicate_rows_only` | Reports duplicated full rows. | Prints a duplicate warning with `2 duplicated row(s)` and the duplicate row content. |
@@ -61,7 +61,7 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-045 | `test_build_dataframes_combines_and_sorts_transactions_and_positions` | Combines parser outputs and sorts final DataFrames. | Transactions sort by date ascending; positions sort by market value descending. |
 | TC-046 | `test_dataframe_table_serializes_nan_timestamps_and_numpy_scalars` | Converts DataFrames into JSON-friendly table payloads. | Timestamps become dates, missing values become empty strings, and row count is preserved. |
 | TC-047 | `test_format_table_value_handles_isoformat_and_item_values` | Formats pandas timestamps and scalar values. | Returns `2026-04-01` and native integer `7`. |
-| TC-048 | `test_get_generated_output_names_returns_existing_expected_files_only` | Lists generated output files that exist for a date. | Returns only the matching existing chart and CSV names. |
+| TC-048 | `test_get_generated_output_names_returns_existing_csv_files_only` | Lists generated CSV output files that exist for a date. | Returns matching CSV names and an empty legacy chart list. |
 | TC-049 | `test_run_report_with_console_output_includes_captured_console_text` | Captures console output around the report workflow. | Returned report includes a `console_output` field. |
 | TC-050 | `test_user_friendly_error_messages_cover_common_exceptions` | Maps common exceptions to plain-language messages. | Each exception type returns an actionable user-facing message. |
 | TC-051 | `test_index_renders_default_paths` | Renders the Flask homepage. | HTTP 200 response includes `Portfolio Tracker`. |
@@ -78,7 +78,12 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-062 | `test_save_stock_code_mapping_persists_and_updates_history` | Saves the stock-code mapping CSV and updates it on a later name change. | `stock_code_mapping.csv` persists the latest name and stores the earlier name in `old_stock_names`. |
 | TC-063 | `test_save_report_outputs_writes_stock_code_mapping` | Ensures the report output workflow writes the stock-code mapping file. | Project mapping path contains `stock_code_mapping.csv` with the parsed stock code and stock name. |
 | TC-064 | `test_output_file_serves_project_stock_code_mapping` | Serves the project-root stock-code mapping CSV through the output download route. | HTTP 200 response includes the persisted stock-code mapping CSV content. |
-| TC-065 | `test_save_position_distribution_pie_chart_uses_large_readable_canvas` | Generates a populated pie chart and checks that the saved PNG has enough pixel area for readable web display. | Saved chart image is at least 1000 pixels wide and 900 pixels tall. |
+| TC-065 | `test_save_seaborn_position_distribution_pie_chart_uses_large_readable_canvas` | Generates a populated Seaborn-styled pie chart and checks that the saved PNG has enough pixel area for readable web display. | Saved chart image is at least 1000 pixels wide and 900 pixels tall. |
 | TC-066 | `test_set_matplotlib_cache_dir_uses_non_gui_backend` | Verifies chart generation uses a non-GUI Matplotlib backend. | Matplotlib backend is `agg`, avoiding GUI warnings during Flask request-thread chart rendering. |
 | TC-067 | `test_delete_broker_files_api_removes_files_from_source_folders` | Delete Broker Files API removes files from the configured POEMS and Interactive Brokers source folders. | HTTP 200 with `deleted_count` of 2; source files are gone and both folders remain. |
 | TC-068 | `test_delete_output_files_api_removes_files_from_output_folder` | Delete Output Files API removes generated files from the configured Output folder. | HTTP 200 with `deleted_count` of 2; the Output folder remains empty and still exists. |
+| TC-069 | `test_save_seaborn_monthly_position_chart_creates_file` | Generates a Seaborn monthly investment-position line chart. | Creates `seaborn_investment_positions_by_month_YYYY-MM-DD.png`. |
+| TC-070 | `test_save_seaborn_position_distribution_pie_chart_creates_file` | Generates a Seaborn-styled position distribution pie chart. | Creates `seaborn_sector_distribution_YYYY-MM-DD.png`. |
+| TC-071 | `test_get_generated_chart_sets_returns_seaborn_and_plotly_names` | Lists generated chart names grouped by chart library. | Returns separate `seaborn` and `plotly` chart lists. |
+| TC-072 | `test_save_plotly_monthly_position_chart_creates_html_file` | Generates a Plotly monthly investment-position line chart. | Creates `plotly_investment_positions_by_month_YYYY-MM-DD.html` containing Plotly markup. |
+| TC-073 | `test_save_plotly_position_distribution_pie_chart_creates_html_file` | Generates a Plotly position distribution pie chart. | Creates `plotly_sector_distribution_YYYY-MM-DD.html` containing Plotly markup. |
