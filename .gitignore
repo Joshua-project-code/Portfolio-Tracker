@@ -29,6 +29,7 @@ desktop.ini
 # Generated parser outputs
 Output/
 ../Output/
+stock_code_mapping.csv
 
 # Local broker exports and statements
 POEMS/

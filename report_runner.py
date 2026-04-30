@@ -23,6 +23,7 @@ from chart_helpers import (
 from constants import (
     DEFAULT_BROKER_ROOT_PATH,
     DEFAULT_OUTPUT_PATH,
+    DEFAULT_STOCK_CODE_MAPPING_PATH,
     DEFAULT_STOCK_MAPPING_PATH,
 )
 from file_helpers import ensure_folder_exists, find_csv_files, find_workbooks
@@ -33,6 +34,7 @@ from interactive_brokers_parser import (
 from output_helpers import save_dataframes_to_csv
 from poems_parser import parse_poems_workbooks
 from stock_mapping import enrich_positions_with_mapping, load_stock_mapping
+from stock_code_mapping import save_stock_code_mapping
 from validation import print_duplicate_records_message
 
 
@@ -145,6 +147,11 @@ def save_report_outputs(
 ) -> None:
     """Save report CSV files and chart images to the configured output folder."""
     save_dataframes_to_csv(transactions_df, positions_df, DEFAULT_OUTPUT_PATH)
+    save_stock_code_mapping(
+        transactions_df,
+        positions_df,
+        DEFAULT_STOCK_CODE_MAPPING_PATH,
+    )
     monthly_totals_df = build_monthly_position_totals(workbooks, csv_files)
     save_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
     monthly_transactions_df = build_monthly_transaction_totals(transactions_df)
@@ -200,7 +207,7 @@ def get_generated_output_names(today: str) -> tuple[list[str], list[str]]:
         f"sector_distribution_{today}.png",
         f"geography_distribution_{today}.png",
     ]
-    csv_names = [
+    output_csv_names = [
         f"transactions_{today}.csv",
         f"positions_{today}.csv",
     ]
@@ -208,7 +215,11 @@ def get_generated_output_names(today: str) -> tuple[list[str], list[str]]:
     existing_charts = [
         name for name in chart_names if (DEFAULT_OUTPUT_PATH / name).exists()
     ]
-    existing_csvs = [name for name in csv_names if (DEFAULT_OUTPUT_PATH / name).exists()]
+    existing_csvs = [
+        name for name in output_csv_names if (DEFAULT_OUTPUT_PATH / name).exists()
+    ]
+    if DEFAULT_STOCK_CODE_MAPPING_PATH.exists():
+        existing_csvs.append(DEFAULT_STOCK_CODE_MAPPING_PATH.name)
 
     return existing_charts, existing_csvs
 

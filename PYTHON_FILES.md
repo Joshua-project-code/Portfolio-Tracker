@@ -12,6 +12,7 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `output_helpers.py` | Saves generated transaction and position dataframes to dated CSV files, overwriting only matching filenames. |
 | `chart_helpers.py` | Builds and saves monthly line charts and sector/geography pie charts, including currency separation and small-slice aggregation into `Others`. |
 | `stock_mapping.py` | Loads `stock_mapping.csv`, normalizes stock names, and enriches positions with sector and geography classifications. |
+| `stock_code_mapping.py` | Builds and persists project-root `stock_code_mapping.csv`, mapping immutable stock codes to the latest stock name while retaining historical stock names when names change. |
 | `poems_parser.py` | Parses POEMS Excel workbooks into the common transaction and position dataframe schemas. It also infers missing POEMS position stock codes from transaction rows where possible. |
 | `interactive_brokers_parser.py` | Parses Interactive Brokers activity CSV files, extracting trades, open positions, and instrument descriptions into the common dataframe schemas. |
 | `validation.py` | Contains validation/reporting helpers, currently used to print full-row duplicate records in the generated dataframes. |

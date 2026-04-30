@@ -11,6 +11,9 @@ The main script combines the broker data into:
 
 - `transactions_df`: stock buy/sell transaction history from POEMS and Interactive Brokers
 - `positions_df`: current investment positions from POEMS and Interactive Brokers
+- `stock_code_mapping.csv`: a persisted mapping from stock code to latest stock
+  name, with previous stock names retained when a broker reports a changed name
+  for the same stock code
 
 The script also checks both dataframes for duplicate full-row records and prints a warning if duplicates are found.
 
@@ -75,6 +78,10 @@ The parser uses this mapping to create investment-position pie charts. If you
 want to change a stock's sector or geography, or if a new stock appears as
 `Unmapped`, update `stock_mapping.csv` directly.
 
+This file is separate from the generated project-root `stock_code_mapping.csv`, which
+is produced automatically from broker reports and should be treated as parser
+output rather than a sector/geography classification file.
+
 ## Install Dependencies
 
 The script and web app require pandas, openpyxl, matplotlib, and Flask.
@@ -138,6 +145,8 @@ The script will print:
 - Duplicate-record warnings, if duplicates exist
 - Monthly investment-position and transaction-amount line charts by broker and currency saved to `Output`
 - Sector and geography investment-position pie charts by currency saved to `Output`; slices under 10% are grouped as `Others`
+- A persistent `stock_code_mapping.csv` file saved to the project folder, with columns
+  `stock_code`, `stock_name`, and `old_stock_names`
 
 The script also saves the output CSV files into the parent-level `Output` folder
 using today's date in the filename. If the `Output` folder does not exist, the
@@ -160,6 +169,8 @@ Output/
 +-- transactions_by_month_2026-04-28.png
 +-- sector_distribution_2026-04-28.png
 +-- geography_distribution_2026-04-28.png
+Portfolio Tracker/
++-- stock_code_mapping.csv
 ```
 
 ## Optional Root Folder Argument

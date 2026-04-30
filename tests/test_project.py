@@ -59,6 +59,11 @@ from stock_mapping import (
     load_stock_mapping,
     normalize_stock_name,
 )
+from stock_code_mapping import (
+    build_stock_code_mapping,
+    extract_stock_code_name_pairs,
+    save_stock_code_mapping,
+)
 from validation import print_duplicate_records_message
 
 
@@ -537,6 +542,81 @@ class StockMappingTests(unittest.TestCase):
         self.assertTrue(enriched.empty)
 
 
+class StockCodeMappingTests(unittest.TestCase):
+    def test_extract_stock_code_name_pairs_combines_transactions_and_positions(self) -> None:
+        transactions = pd.DataFrame(
+            {
+                "stock_code": ["ACME", "BETA", ""],
+                "stock_name": ["Acme Corp", "Beta Ltd", "Blank Code"],
+            }
+        )
+        positions = pd.DataFrame(
+            {
+                "stock_code": ["ACME", "GAMMA"],
+                "stock_name": ["Acme Corporation", pd.NA],
+            }
+        )
+
+        pairs = extract_stock_code_name_pairs(transactions, positions)
+
+        self.assertEqual(pairs["stock_code"].tolist(), ["ACME", "BETA", "ACME", "GAMMA"])
+        self.assertEqual(pairs.loc[3, "stock_code"], "GAMMA")
+        self.assertTrue(pd.isna(pairs.loc[3, "stock_name"]))
+
+    def test_build_stock_code_mapping_preserves_old_names_when_name_changes(self) -> None:
+        existing_mapping = pd.DataFrame(
+            {
+                "stock_code": ["ACME"],
+                "stock_name": ["Acme Corp"],
+                "old_stock_names": ["Acme Limited"],
+            }
+        )
+        current_pairs = pd.DataFrame(
+            {
+                "stock_code": ["ACME"],
+                "stock_name": ["Acme Corporation"],
+            }
+        )
+
+        mapping = build_stock_code_mapping(current_pairs, existing_mapping)
+
+        self.assertEqual(mapping.loc[0, "stock_code"], "ACME")
+        self.assertEqual(mapping.loc[0, "stock_name"], "Acme Corporation")
+        self.assertEqual(mapping.loc[0, "old_stock_names"], "Acme Corp|Acme Limited")
+
+    def test_build_stock_code_mapping_allows_missing_stock_name(self) -> None:
+        current_pairs = pd.DataFrame({"stock_code": ["GAMMA"], "stock_name": [pd.NA]})
+
+        mapping = build_stock_code_mapping(current_pairs)
+
+        self.assertEqual(mapping.loc[0, "stock_code"], "GAMMA")
+        self.assertTrue(pd.isna(mapping.loc[0, "stock_name"]))
+        self.assertTrue(pd.isna(mapping.loc[0, "old_stock_names"]))
+
+    def test_save_stock_code_mapping_persists_and_updates_history(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mapping_path = Path(temp_dir) / "stock_code_mapping.csv"
+            transactions = pd.DataFrame(
+                {"stock_code": ["ACME"], "stock_name": ["Acme Corp"]}
+            )
+            positions = pd.DataFrame(columns=["stock_code", "stock_name"])
+            save_stock_code_mapping(transactions, positions, mapping_path)
+
+            updated_transactions = pd.DataFrame(
+                {"stock_code": ["ACME"], "stock_name": ["Acme Corporation"]}
+            )
+            saved = save_stock_code_mapping(
+                updated_transactions,
+                positions,
+                mapping_path,
+            )
+            reloaded = pd.read_csv(mapping_path)
+
+            self.assertEqual(saved.loc[0, "stock_name"], "Acme Corporation")
+            self.assertEqual(saved.loc[0, "old_stock_names"], "Acme Corp")
+            self.assertEqual(reloaded.loc[0, "old_stock_names"], "Acme Corp")
+
+
 class ChartHelperTests(unittest.TestCase):
     def test_build_monthly_transaction_totals_groups_by_month_broker_and_currency(self) -> None:
         transactions = pd.DataFrame(
@@ -769,15 +849,19 @@ class ReportRunnerTests(unittest.TestCase):
     def test_get_generated_output_names_returns_existing_expected_files_only(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir)
+            mapping_path = output_path / "project" / "stock_code_mapping.csv"
+            mapping_path.parent.mkdir()
             today = "2026-04-30"
             (output_path / f"transactions_{today}.csv").write_text("", encoding="utf-8")
             (output_path / f"sector_distribution_{today}.png").write_text("", encoding="utf-8")
+            mapping_path.write_text("", encoding="utf-8")
 
             with patch("report_runner.DEFAULT_OUTPUT_PATH", output_path):
-                charts, csvs = get_generated_output_names(today)
+                with patch("report_runner.DEFAULT_STOCK_CODE_MAPPING_PATH", mapping_path):
+                    charts, csvs = get_generated_output_names(today)
 
             self.assertEqual(charts, [f"sector_distribution_{today}.png"])
-            self.assertEqual(csvs, [f"transactions_{today}.csv"])
+            self.assertEqual(csvs, [f"transactions_{today}.csv", "stock_code_mapping.csv"])
 
     def test_run_report_with_console_output_includes_captured_console_text(self) -> None:
         with patch("report_runner.run_report", return_value={"ok": True}) as run_report:
@@ -785,6 +869,61 @@ class ReportRunnerTests(unittest.TestCase):
 
         self.assertEqual(report["console_output"], "")
         run_report.assert_called_once()
+
+    def test_save_report_outputs_writes_stock_code_mapping(self) -> None:
+        import report_runner
+
+        transactions = pd.DataFrame(
+            {
+                "stock_code": ["ACME"],
+                "stock_name": ["Acme Corp"],
+            }
+        )
+        positions = pd.DataFrame(columns=["stock_code", "stock_name"])
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir)
+            with patch.object(report_runner, "DEFAULT_OUTPUT_PATH", output_path):
+                with patch.object(
+                    report_runner,
+                    "DEFAULT_STOCK_CODE_MAPPING_PATH",
+                    output_path / "stock_code_mapping.csv",
+                ):
+                    with patch.object(
+                        report_runner,
+                        "build_monthly_position_totals",
+                        return_value=pd.DataFrame(),
+                    ):
+                        with patch.object(report_runner, "save_monthly_position_chart"):
+                            with patch.object(
+                                report_runner,
+                                "build_monthly_transaction_totals",
+                                return_value=pd.DataFrame(),
+                            ):
+                                with patch.object(report_runner, "save_monthly_transaction_chart"):
+                                    with patch.object(
+                                        report_runner,
+                                        "load_stock_mapping",
+                                        return_value=pd.DataFrame(
+                                            columns=["stock_name_key", "sector", "geography"]
+                                        ),
+                                    ):
+                                        with patch.object(
+                                            report_runner,
+                                            "enrich_positions_with_mapping",
+                                            return_value=pd.DataFrame(),
+                                        ):
+                                            with patch.object(
+                                                report_runner,
+                                                "save_position_distribution_pie_chart",
+                                            ):
+                                                report_runner.save_report_outputs(
+                                                    [], [], transactions, positions
+                                                )
+
+            saved = pd.read_csv(output_path / "stock_code_mapping.csv")
+            self.assertEqual(saved.loc[0, "stock_code"], "ACME")
+            self.assertEqual(saved.loc[0, "stock_name"], "Acme Corp")
 
 
 class ErrorMessageTests(unittest.TestCase):
@@ -948,6 +1087,19 @@ class FlaskAppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertEqual(payload["error_type"], "ValueError")
         self.assertIn("bad input", payload["error"])
+
+    def test_output_file_serves_project_stock_code_mapping(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mapping_path = Path(temp_dir) / "stock_code_mapping.csv"
+            mapping_path.write_text("stock_code,stock_name\nACME,Acme Corp\n", encoding="utf-8")
+            flask_app.app.config.update(TESTING=True)
+            client = flask_app.app.test_client()
+
+            with patch.object(flask_app, "DEFAULT_STOCK_CODE_MAPPING_PATH", mapping_path):
+                response = client.get("/outputs/stock_code_mapping.csv")
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b"ACME,Acme Corp", response.data)
 
 
 if __name__ == "__main__":

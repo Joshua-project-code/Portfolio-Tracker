@@ -46,7 +46,7 @@ python .\parse_broker_reports.py "C:\path\to\broker-root"
 Quick syntax check for all Python files:
 
 ```powershell
-python -m py_compile app.py report_runner.py parse_broker_reports.py validation.py stock_mapping.py poems_parser.py output_helpers.py interactive_brokers_parser.py file_helpers.py constants.py chart_helpers.py
+python -m py_compile app.py report_runner.py parse_broker_reports.py validation.py stock_mapping.py stock_code_mapping.py poems_parser.py output_helpers.py interactive_brokers_parser.py file_helpers.py constants.py chart_helpers.py
 ```
 
 Run the automated test suite:
@@ -68,6 +68,7 @@ python -m unittest discover -s tests -v
 - `poems_parser.py`: POEMS Excel transaction and position parsing.
 - `interactive_brokers_parser.py`: Interactive Brokers CSV section, transaction, and position parsing.
 - `stock_mapping.py`: Loads `stock_mapping.csv` and adds sector/geography metadata to positions.
+- `stock_code_mapping.py`: Builds and persists project-root `stock_code_mapping.csv`, mapping stock codes to latest stock names and retaining old stock names when names change.
 - `chart_helpers.py`: Builds monthly summaries and saves line/pie charts.
 - `output_helpers.py`: Writes dated CSV output files.
 - `validation.py`: Prints duplicate full-row warnings.

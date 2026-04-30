@@ -19,6 +19,7 @@ from constants import (
     DEFAULT_INTERACTIVE_BROKERS_PATH,
     DEFAULT_OUTPUT_PATH,
     DEFAULT_POEMS_PATH,
+    DEFAULT_STOCK_CODE_MAPPING_PATH,
     EXCEL_EXTENSIONS,
 )
 from file_helpers import ensure_folder_exists
@@ -269,8 +270,15 @@ def upload_files_api():
 @app.get("/outputs/<path:filename>")
 def output_file(filename: str):
     """Serve generated CSV and PNG files from the configured Output folder."""
+    if filename == DEFAULT_STOCK_CODE_MAPPING_PATH.name:
+        return send_from_directory(DEFAULT_STOCK_CODE_MAPPING_PATH.parent, filename)
+
     return send_from_directory(DEFAULT_OUTPUT_PATH, filename)
 
 
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.run(
+        debug=True,
+        port=int(os.environ.get("PORT", "5000")),
+        use_reloader=False,
+    )
