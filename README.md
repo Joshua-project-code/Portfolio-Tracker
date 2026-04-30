@@ -29,8 +29,11 @@ Vibe Coding/
 |   +-- your-interactive-brokers-export.csv
 +-- Output/
 +-- Portfolio Tracker/
-|   +-- parse_broker_reports.py
-|   +-- stock_mapping.csv
+|   +-- app.py
+|   +-- portfolio_tracker/
+|   +-- data/
+|   |   +-- stock_mapping.csv
+|   +-- docs/
 ```
 
 ### POEMS Files
@@ -69,14 +72,14 @@ The Interactive Brokers CSV should include these sections:
 
 ### Stock Mapping
 
-The project includes `stock_mapping.csv`, which maps each `stock_name` to:
+The project includes `data/stock_mapping.csv`, which maps each `stock_name` to:
 
 - `sector`
 - `geography`
 
 The parser uses this mapping to create investment-position pie charts. If you
 want to change a stock's sector or geography, or if a new stock appears as
-`Unmapped`, update `stock_mapping.csv` directly.
+`Unmapped`, update `data/stock_mapping.csv` directly.
 
 This file is separate from the generated project-root `stock_code_mapping.csv`, which
 is produced automatically from broker reports and should be treated as parser
@@ -125,7 +128,7 @@ Click `Upload Files` to add new broker exports from the web app:
 - After a successful upload, the web app automatically re-runs the report using all files in both broker folders
 
 Click `Application Testing` to open the automated test page. The page lists
-the catalogued test cases from `testapp.md`, lets you run each test
+the catalogued test cases from `docs/testapp.md`, lets you run each test
 individually, and includes a `Run All Tests` button with a pass-count summary.
 
 ## Run The Parser From The Console
@@ -133,7 +136,7 @@ individually, and includes a `Run All Tests` button with a pass-count summary.
 From the project folder, run:
 
 ```powershell
-python .\parse_broker_reports.py
+python -m portfolio_tracker.parse_broker_reports
 ```
 
 The script will print:
@@ -180,7 +183,7 @@ By default, the script reads broker files from the parent folder of this project
 You can also provide a different broker root folder that contains `POEMS` and `Interactive Brokers` subfolders:
 
 ```powershell
-python .\parse_broker_reports.py "C:\path\to\your\folder"
+python -m portfolio_tracker.parse_broker_reports "C:\path\to\your\folder"
 ```
 
 ## Run Automated Tests
@@ -191,5 +194,5 @@ From the project folder, run:
 python -m unittest discover -s tests -v
 ```
 
-The `testapp.md` file catalogues each automated test case, its description, and
+The `docs/testapp.md` file catalogues each automated test case, its description, and
 the expected observed output.

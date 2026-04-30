@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from constants import CSV_EXTENSIONS, EXCEL_EXTENSIONS
+from .constants import CSV_EXTENSIONS, EXCEL_EXTENSIONS
 
 
 def clean_column_name(column: str) -> str:

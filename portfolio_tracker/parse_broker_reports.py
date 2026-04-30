@@ -9,8 +9,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from constants import DEFAULT_BROKER_ROOT_PATH
-from report_runner import run_report
+from .constants import DEFAULT_BROKER_ROOT_PATH
+from .report_runner import run_report
 
 
 def main() -> None:

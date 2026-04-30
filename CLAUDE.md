@@ -34,19 +34,19 @@ python .\app.py
 Run the parser from the project folder:
 
 ```powershell
-python .\parse_broker_reports.py
+python -m portfolio_tracker.parse_broker_reports
 ```
 
 Run with a custom broker root folder:
 
 ```powershell
-python .\parse_broker_reports.py "C:\path\to\broker-root"
+python -m portfolio_tracker.parse_broker_reports "C:\path\to\broker-root"
 ```
 
 Quick syntax check for all Python files:
 
 ```powershell
-python -m py_compile app.py report_runner.py parse_broker_reports.py validation.py stock_mapping.py stock_code_mapping.py poems_parser.py output_helpers.py interactive_brokers_parser.py file_helpers.py constants.py chart_helpers.py
+python -m compileall app.py portfolio_tracker tests
 ```
 
 Run the automated test suite:
@@ -57,24 +57,26 @@ python -m unittest discover -s tests -v
 
 ## File Map
 
-- `app.py`: Flask web server for the Portfolio Tracker UI, upload API, and report API.
-- `parse_broker_reports.py`: Main CLI entry point and user-friendly error handling.
-- `report_runner.py`: Shared report workflow used by the CLI and web app, including broker file discovery, dataframe construction, console preview output, CSV/chart generation, and web response serialization.
-- `templates/index.html`: Main web app page rendered by Flask.
-- `static/app.js`: Frontend report fetch and rendering logic.
-- `static/styles.css`: Web app styles.
-- `constants.py`: Shared paths, extensions, and canonical output schemas.
-- `file_helpers.py`: File discovery, folder creation, sheet lookup, column cleanup, and broker-name inference.
-- `poems_parser.py`: POEMS Excel transaction and position parsing.
-- `interactive_brokers_parser.py`: Interactive Brokers CSV section, transaction, and position parsing.
-- `stock_mapping.py`: Loads `stock_mapping.csv` and adds sector/geography metadata to positions.
-- `stock_code_mapping.py`: Builds and persists project-root `stock_code_mapping.csv`, mapping stock codes to latest stock names and retaining old stock names when names change.
-- `chart_helpers.py`: Builds monthly summaries and saves line/pie charts.
-- `output_helpers.py`: Writes dated CSV output files.
-- `validation.py`: Prints duplicate full-row warnings.
-- `stock_mapping.csv`: User-editable stock-to-sector/geography mapping.
+- `app.py`: Project-root Flask launcher that imports `portfolio_tracker.web`.
+- `portfolio_tracker/web.py`: Flask web server for the Portfolio Tracker UI, Application Testing page, upload API, report API, and test APIs.
+- `portfolio_tracker/parse_broker_reports.py`: Main CLI entry point and user-friendly error handling.
+- `portfolio_tracker/report_runner.py`: Shared report workflow used by the CLI and web app, including broker file discovery, dataframe construction, console preview output, CSV/chart generation, and web response serialization.
+- `portfolio_tracker/templates/index.html`: Main web app page rendered by Flask.
+- `portfolio_tracker/static/app.js`: Frontend report fetch and rendering logic.
+- `portfolio_tracker/static/styles.css`: Web app styles.
+- `portfolio_tracker/constants.py`: Shared paths, extensions, and canonical output schemas.
+- `portfolio_tracker/file_helpers.py`: File discovery, folder creation, sheet lookup, column cleanup, and broker-name inference.
+- `portfolio_tracker/poems_parser.py`: POEMS Excel transaction and position parsing.
+- `portfolio_tracker/interactive_brokers_parser.py`: Interactive Brokers CSV section, transaction, and position parsing.
+- `portfolio_tracker/stock_mapping.py`: Loads `data/stock_mapping.csv` and adds sector/geography metadata to positions.
+- `portfolio_tracker/stock_code_mapping.py`: Builds and persists project-root `stock_code_mapping.csv`, mapping stock codes to latest stock names and retaining old stock names when names change.
+- `portfolio_tracker/chart_helpers.py`: Builds monthly summaries and saves line/pie charts.
+- `portfolio_tracker/output_helpers.py`: Writes dated CSV output files.
+- `portfolio_tracker/validation.py`: Prints duplicate full-row warnings.
+- `data/stock_mapping.csv`: User-editable stock-to-sector/geography mapping.
 - `tests/test_project.py`: Automated unittest coverage for parser helpers, broker parsers, report workflow helpers, output helpers, stock mapping, chart aggregation, validation output, and Flask routes.
-- `testapp.md`: Test case catalogue with each test's description and expected observed output.
+- `docs/testapp.md`: Test case catalogue with each test's description and expected observed output.
+- `docs/PYTHON_FILES.md`: Python module reference.
 
 ## Data Contracts
 
@@ -104,6 +106,10 @@ Vibe Coding/
 +-- Interactive Brokers/
 +-- Output/
 +-- Portfolio Tracker/
+|   +-- app.py
+|   +-- portfolio_tracker/
+|   +-- data/
+|   +-- docs/
 ```
 
 Do not commit broker exports or generated outputs. `.gitignore` already excludes local broker folders, `Output`, Python caches, virtual environments, and Matplotlib cache files.
@@ -124,10 +130,10 @@ Do not commit broker exports or generated outputs. `.gitignore` already excludes
 - Keep filesystem path and discovery logic inside `file_helpers.py`.
 - Avoid broad refactors unless needed for the requested change.
 - Keep all Markdown documentation up to date when implementing changes,
-  especially `README.md`, `PYTHON_FILES.md`, `testapp.md`, and this `CLAUDE.md` guidance.
+  especially `README.md`, `docs/PYTHON_FILES.md`, `docs/testapp.md`, and this `CLAUDE.md` guidance.
   If behavior, commands, dependencies, file structure, or user workflows change,
   update the relevant Markdown files in the same change.
-- Keep `testapp.md` updated whenever tests are added, removed, renamed, or materially changed. Each catalogue entry should include the test case description and expected observed output.
+- Keep `docs/testapp.md` updated whenever tests are added, removed, renamed, or materially changed. Each catalogue entry should include the test case description and expected observed output.
 - If adding new output files, update `README.md` and `.gitignore` if appropriate.
 
 ## Verification
@@ -143,7 +149,7 @@ python -m unittest discover -s tests -v
 For parser or chart behavior changes, run:
 
 ```powershell
-python .\parse_broker_reports.py
+python -m portfolio_tracker.parse_broker_reports
 ```
 
 If broker files are not available locally, state that runtime verification could not be completed and describe what was checked instead.

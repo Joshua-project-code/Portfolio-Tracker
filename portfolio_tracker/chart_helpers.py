@@ -12,12 +12,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from file_helpers import ensure_folder_exists
-from interactive_brokers_parser import (
+from .file_helpers import ensure_folder_exists
+from .interactive_brokers_parser import (
     parse_interactive_brokers_positions,
     parse_interactive_brokers_transactions,
 )
-from poems_parser import (
+from .poems_parser import (
     add_stock_codes_to_positions,
     parse_poems_positions,
     parse_poems_transactions,
@@ -27,7 +27,7 @@ from poems_parser import (
 def set_matplotlib_cache_dir() -> None:
     """Keep Matplotlib cache files inside the project workspace."""
     os.environ.setdefault(
-        "MPLCONFIGDIR", str(Path(__file__).resolve().parent / ".matplotlib-cache")
+        "MPLCONFIGDIR", str(Path(__file__).resolve().parent.parent / ".matplotlib-cache")
     )
 
 

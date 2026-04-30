@@ -12,16 +12,16 @@ from unittest.mock import patch
 
 import pandas as pd
 
-import app as flask_app
-from chart_helpers import (
+import portfolio_tracker.web as flask_app
+from portfolio_tracker.chart_helpers import (
     aggregate_small_pie_slices,
     build_monthly_position_totals,
     build_monthly_transaction_totals,
     save_monthly_position_chart,
     save_position_distribution_pie_chart,
 )
-from constants import POSITION_COLUMNS, TRANSACTION_COLUMNS
-from file_helpers import (
+from portfolio_tracker.constants import POSITION_COLUMNS, TRANSACTION_COLUMNS
+from portfolio_tracker.file_helpers import (
     clean_column_name,
     ensure_folder_exists,
     find_csv_files,
@@ -29,7 +29,7 @@ from file_helpers import (
     find_workbooks,
     get_broker_name,
 )
-from interactive_brokers_parser import (
+from portfolio_tracker.interactive_brokers_parser import (
     get_interactive_brokers_instrument_names,
     get_interactive_brokers_section,
     parse_interactive_brokers_positions,
@@ -37,15 +37,15 @@ from interactive_brokers_parser import (
     parse_interactive_brokers_transactions,
     parse_interactive_brokers_transactions_folder,
 )
-from output_helpers import save_dataframe_to_csv, save_dataframes_to_csv
-from parse_broker_reports import get_user_friendly_error_message
-from poems_parser import (
+from portfolio_tracker.output_helpers import save_dataframe_to_csv, save_dataframes_to_csv
+from portfolio_tracker.parse_broker_reports import get_user_friendly_error_message
+from portfolio_tracker.poems_parser import (
     add_stock_codes_to_positions,
     parse_poems_positions,
     parse_poems_transactions,
     parse_poems_workbooks,
 )
-from report_runner import (
+from portfolio_tracker.report_runner import (
     build_dataframes,
     dataframe_table,
     find_broker_files_for_report,
@@ -54,17 +54,17 @@ from report_runner import (
     run_report_with_console_output,
     wait_for_broker_files,
 )
-from stock_mapping import (
+from portfolio_tracker.stock_mapping import (
     enrich_positions_with_mapping,
     load_stock_mapping,
     normalize_stock_name,
 )
-from stock_code_mapping import (
+from portfolio_tracker.stock_code_mapping import (
     build_stock_code_mapping,
     extract_stock_code_name_pairs,
     save_stock_code_mapping,
 )
-from validation import print_duplicate_records_message
+from portfolio_tracker.validation import print_duplicate_records_message
 
 
 TEST_TEMP_ROOT = Path(__file__).resolve().parents[1] / ".test-tmp"
@@ -812,13 +812,13 @@ class ReportRunnerTests(unittest.TestCase):
         ib_positions.loc[0, "broker"] = "ib"
         ib_positions.loc[0, "market_value"] = 100
 
-        with patch("report_runner.parse_poems_workbooks", return_value=(poems_transactions, poems_positions)):
+        with patch("portfolio_tracker.report_runner.parse_poems_workbooks", return_value=(poems_transactions, poems_positions)):
             with patch(
-                "report_runner.parse_interactive_brokers_transactions_folder",
+                "portfolio_tracker.report_runner.parse_interactive_brokers_transactions_folder",
                 return_value=ib_transactions,
             ):
                 with patch(
-                    "report_runner.parse_interactive_brokers_positions_folder",
+                    "portfolio_tracker.report_runner.parse_interactive_brokers_positions_folder",
                     return_value=ib_positions,
                 ):
                     transactions, positions = build_dataframes([], Path("ib"))
@@ -856,22 +856,22 @@ class ReportRunnerTests(unittest.TestCase):
             (output_path / f"sector_distribution_{today}.png").write_text("", encoding="utf-8")
             mapping_path.write_text("", encoding="utf-8")
 
-            with patch("report_runner.DEFAULT_OUTPUT_PATH", output_path):
-                with patch("report_runner.DEFAULT_STOCK_CODE_MAPPING_PATH", mapping_path):
+            with patch("portfolio_tracker.report_runner.DEFAULT_OUTPUT_PATH", output_path):
+                with patch("portfolio_tracker.report_runner.DEFAULT_STOCK_CODE_MAPPING_PATH", mapping_path):
                     charts, csvs = get_generated_output_names(today)
 
             self.assertEqual(charts, [f"sector_distribution_{today}.png"])
             self.assertEqual(csvs, [f"transactions_{today}.csv", "stock_code_mapping.csv"])
 
     def test_run_report_with_console_output_includes_captured_console_text(self) -> None:
-        with patch("report_runner.run_report", return_value={"ok": True}) as run_report:
+        with patch("portfolio_tracker.report_runner.run_report", return_value={"ok": True}) as run_report:
             report = run_report_with_console_output(Path("root"))
 
         self.assertEqual(report["console_output"], "")
         run_report.assert_called_once()
 
     def test_save_report_outputs_writes_stock_code_mapping(self) -> None:
-        import report_runner
+        from portfolio_tracker import report_runner
 
         transactions = pd.DataFrame(
             {

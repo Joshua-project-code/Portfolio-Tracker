@@ -66,7 +66,7 @@ The suite is implemented in `tests/test_project.py` and uses workspace-local tem
 | TC-054 | `test_run_report_api_returns_report_json_on_success` | Report API returns workflow output on success. | HTTP 200 with the mocked report JSON. |
 | TC-055 | `test_run_report_api_returns_user_friendly_error_on_failure` | Report API converts workflow exceptions into JSON errors. | HTTP 500 with `error_type` and friendly error text. |
 | TC-056 | `test_application_testing_page_renders_test_runner_shell` | Renders the Application Testing page shell. | HTTP 200 response includes `Application Testing` and `Run All Tests`. |
-| TC-057 | `test_tests_api_returns_catalogued_test_cases` | Returns the test catalogue from `testapp.md` as JSON. | HTTP 200 with catalogue entries including `TC-001` and descriptions. |
+| TC-057 | `test_tests_api_returns_catalogued_test_cases` | Returns the test catalogue from `docs/testapp.md` as JSON. | HTTP 200 with catalogue entries including `TC-001` and descriptions. |
 | TC-058 | `test_run_tests_api_runs_all_or_one_test_case` | Runs all tests or one named test case through the testing API. | HTTP 200 for both requests and the mocked test result is `passed`. |
 | TC-059 | `test_extract_stock_code_name_pairs_combines_transactions_and_positions` | Extracts stock-code/name pairs from parsed transaction and position DataFrames. | Returns unique code/name pairs, drops blank stock codes, and preserves missing stock names as `NaN`. |
 | TC-060 | `test_build_stock_code_mapping_preserves_old_names_when_name_changes` | Merges a current stock name with an existing mapping for the same stock code. | Latest `stock_name` is updated and previous names are retained in `old_stock_names`. |
