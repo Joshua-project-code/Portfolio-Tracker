@@ -11,9 +11,9 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `portfolio_tracker/constants.py` | Defines shared paths, supported file extensions, and the standard transaction and position dataframe column schemas. |
 | `portfolio_tracker/file_helpers.py` | Provides reusable file and spreadsheet helpers, including workbook and CSV discovery, Excel sheet lookup, column-name cleanup, and broker-name inference from folder paths. |
 | `portfolio_tracker/output_helpers.py` | Saves generated transaction and position dataframes to dated CSV files, overwriting only matching filenames. |
-| `portfolio_tracker/chart_helpers.py` | Builds and saves Seaborn and Plotly monthly line charts and sector/geography pie charts, including currency separation and small-slice aggregation into `Others`. |
+| `portfolio_tracker/chart_helpers.py` | Builds chart-ready summaries and saves Seaborn PNG and Plotly HTML monthly line charts and sector/geography pie charts, including role-specific typography, right-side legends, currency separation, and small-slice aggregation into `Others`. |
 | `portfolio_tracker/stock_mapping.py` | Loads `data/stock_mapping.csv`, normalizes stock names, and enriches positions with sector and geography classifications. |
-| `portfolio_tracker/stock_code_mapping.py` | Builds and persists project-root `stock_code_mapping.csv`, mapping immutable stock codes to the latest stock name while retaining historical stock names when names change. |
+| `portfolio_tracker/stock_code_mapping.py` | Builds and persists generated `data/stock_code_mapping.csv`, mapping immutable stock codes to the latest stock name while retaining historical stock names when names change. |
 | `portfolio_tracker/poems_parser.py` | Parses POEMS Excel workbooks into the common transaction and position dataframe schemas. It also infers missing POEMS position stock codes from transaction rows where possible. |
 | `portfolio_tracker/interactive_brokers_parser.py` | Parses Interactive Brokers activity CSV files, extracting trades, open positions, and instrument descriptions into the common dataframe schemas. |
 | `portfolio_tracker/validation.py` | Contains validation/reporting helpers, currently used to print full-row duplicate records in the generated dataframes. |
@@ -26,7 +26,8 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `portfolio_tracker/templates/application_testing.html` | Application Testing web page. |
 | `portfolio_tracker/static/app.js` | Frontend behavior for upload, report execution, Seaborn/Plotly chart-library toggling, cleanup confirmations, delete-result UI updates, charts, CSV links, and tables. |
 | `portfolio_tracker/static/testing.js` | Frontend behavior for listing, running, and displaying application test results. |
-| `portfolio_tracker/static/styles.css` | Shared web app styling. |
+| `portfolio_tracker/static/styles.css` | Shared web app styling, including the dashboard font stack, layout, responsive tables, chart containers, and testing page styles. |
 | `data/stock_mapping.csv` | Editable stock-to-sector/geography mapping used for pie chart enrichment. |
+| `data/stock_code_mapping.csv` | Generated stock-code/name history created from broker reports. |
 | `docs/testapp.md` | Test case catalogue consumed by the Application Testing page. |
 | `requirements.txt` | Python dependencies for running the app, parser, chart generation, and tests. |

@@ -14,7 +14,16 @@ import pandas as pd
 
 from .file_helpers import ensure_folder_exists
 
-SEABORN_FONT_SIZE = 28
+CHART_FONTS = {
+    "title": 20,
+    "subtitle": 17,
+    "axis_label": 14,
+    "tick": 11,
+    "legend_title": 13,
+    "legend": 11,
+    "pie_percent": 11,
+}
+PLOTLY_FONT_FAMILY = "Inter, Segoe UI, Roboto, Arial, sans-serif"
 from .interactive_brokers_parser import (
     parse_interactive_brokers_positions,
     parse_interactive_brokers_transactions,
@@ -200,6 +209,7 @@ def save_seaborn_monthly_line_chart(
 
     set_matplotlib_cache_dir()
     import matplotlib.pyplot as plt
+    import matplotlib.dates as mdates
     import seaborn as sns
 
     ensure_folder_exists(output_path)
@@ -208,8 +218,17 @@ def save_seaborn_monthly_line_chart(
 
     chart_data = monthly_totals.copy()
     chart_data["month"] = pd.to_datetime(chart_data["month"])
-    sns.set_theme(style="whitegrid", context="talk")
-    fig, axis = plt.subplots(figsize=(12, 9.0))
+    sns.set_theme(
+        style="whitegrid",
+        context="notebook",
+        rc={
+            "font.family": "sans-serif",
+            "font.sans-serif": ["Segoe UI", "Arial", "DejaVu Sans", "sans-serif"],
+        },
+    )
+    series_count = max(chart_data["series"].nunique(), 1)
+    fig_height = max(7.2, 5.8 + series_count * 0.22)
+    fig, axis = plt.subplots(figsize=(14, fig_height))
     sns.lineplot(
         data=chart_data,
         x="month",
@@ -219,10 +238,13 @@ def save_seaborn_monthly_line_chart(
         linewidth=2.2,
         ax=axis,
     )
-    axis.set_title(chart_title, fontsize=SEABORN_FONT_SIZE, pad=20)
-    axis.set_xlabel("Month", fontsize=SEABORN_FONT_SIZE)
-    axis.set_ylabel(y_label, fontsize=SEABORN_FONT_SIZE)
-    axis.tick_params(axis="both", labelsize=SEABORN_FONT_SIZE)
+    axis.set_title(chart_title, fontsize=CHART_FONTS["title"], pad=16, weight="semibold")
+    axis.set_xlabel("Month", fontsize=CHART_FONTS["axis_label"], labelpad=10)
+    axis.set_ylabel(y_label, fontsize=CHART_FONTS["axis_label"], labelpad=10)
+    axis.tick_params(axis="both", labelsize=CHART_FONTS["tick"])
+    axis.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=8))
+    axis.xaxis.set_major_formatter(mdates.ConciseDateFormatter(axis.xaxis.get_major_locator()))
+    axis.margins(x=0.04)
     handles, labels = axis.get_legend_handles_labels()
     if axis.get_legend() is not None:
         axis.get_legend().remove()
@@ -231,14 +253,17 @@ def save_seaborn_monthly_line_chart(
         labels,
         title="Broker - Currency",
         loc="center left",
-        bbox_to_anchor=(0.72, 0.5),
+        bbox_to_anchor=(0.75, 0.5),
         ncol=1,
-        fontsize=SEABORN_FONT_SIZE,
-        title_fontsize=SEABORN_FONT_SIZE,
-        frameon=False,
+        fontsize=CHART_FONTS["legend"],
+        title_fontsize=CHART_FONTS["legend_title"],
+        frameon=True,
+        borderpad=0.8,
+        labelspacing=0.6,
+        columnspacing=1.4,
     )
-    fig.autofmt_xdate()
-    fig.subplots_adjust(left=0.10, right=0.68, top=0.88, bottom=0.24)
+    fig.autofmt_xdate(rotation=30, ha="right")
+    fig.subplots_adjust(left=0.09, right=0.72, top=0.88, bottom=0.20)
     plt.savefig(chart_file, dpi=150)
     plt.close()
 
@@ -284,6 +309,10 @@ def save_plotly_monthly_line_chart(
     figure.update_layout(
         template="plotly_white",
         height=620,
+        font={"family": PLOTLY_FONT_FAMILY, "size": 13, "color": "#1f2933"},
+        title={"font": {"size": 22}, "x": 0.02, "xanchor": "left"},
+        xaxis={"title_font": {"size": 15}, "tickfont": {"size": 12}, "automargin": True},
+        yaxis={"title_font": {"size": 15}, "tickfont": {"size": 12}, "automargin": True},
         legend_title_text="Broker - Currency",
         legend={
             "orientation": "v",
@@ -291,8 +320,10 @@ def save_plotly_monthly_line_chart(
             "y": 1,
             "xanchor": "left",
             "yanchor": "top",
+            "font": {"size": 12},
+            "title": {"font": {"size": 13}},
         },
-        margin={"b": 80, "r": 220},
+        margin={"t": 80, "b": 90, "l": 90, "r": 260},
     )
     figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
 
@@ -336,13 +367,15 @@ def save_seaborn_position_distribution_pie_chart(
         print(f"No chartable investment position data found. Skipping Seaborn {chart_title.lower()} chart.")
         return
 
-    sns.set_theme(style="white", context="talk")
+    sns.set_theme(
+        style="white",
+        context="notebook",
+        rc={
+            "font.family": "sans-serif",
+            "font.sans-serif": ["Segoe UI", "Arial", "DejaVu Sans", "sans-serif"],
+        },
+    )
     currencies = totals["currency"].dropna().unique()
-    fig, axes = plt.subplots(1, len(currencies), figsize=(12 * len(currencies), 17.25))
-    if len(currencies) == 1:
-        axes = [axes]
-    fig.subplots_adjust(left=0.04, right=0.78, top=0.84, bottom=0.06, wspace=0.32)
-
     currency_chart_data = []
     legend_labels = []
     for currency in currencies:
@@ -354,6 +387,13 @@ def save_seaborn_position_distribution_pie_chart(
         for label in currency_totals[category_column].astype(str):
             if label not in legend_labels:
                 legend_labels.append(label)
+
+    fig_width = max(14, 7.2 * len(currencies) + 3.0)
+    fig_height = max(8.5, 6.6 + len(legend_labels) * 0.28)
+    fig, axes = plt.subplots(1, len(currencies), figsize=(fig_width, fig_height))
+    if len(currencies) == 1:
+        axes = [axes]
+    fig.subplots_adjust(left=0.05, right=0.72, top=0.82, bottom=0.08, wspace=0.28)
 
     palette = sns.color_palette("Set2", n_colors=max(len(legend_labels), 1))
     color_by_label = dict(zip(legend_labels, palette))
@@ -368,14 +408,14 @@ def save_seaborn_position_distribution_pie_chart(
             autopct="%1.1f%%",
             pctdistance=0.72,
             startangle=90,
-            radius=1.28,
+            radius=1.0,
             colors=colors,
-            textprops={"fontsize": SEABORN_FONT_SIZE},
+            textprops={"fontsize": CHART_FONTS["pie_percent"]},
         )
-        axis.set_title(f"{currency}", fontsize=SEABORN_FONT_SIZE, pad=22)
+        axis.set_title(f"{currency}", fontsize=CHART_FONTS["subtitle"], pad=14, weight="semibold")
         axis.set_aspect("equal")
 
-    fig.suptitle(chart_title, fontsize=SEABORN_FONT_SIZE)
+    fig.suptitle(chart_title, fontsize=CHART_FONTS["title"], weight="semibold")
     legend_handles = [
         Patch(facecolor=color_by_label[label], label=label)
         for label in legend_labels
@@ -384,11 +424,14 @@ def save_seaborn_position_distribution_pie_chart(
         handles=legend_handles,
         title=category_column.replace("_", " ").title(),
         loc="center left",
-        bbox_to_anchor=(0.80, 0.5),
-        fontsize=SEABORN_FONT_SIZE,
-        title_fontsize=SEABORN_FONT_SIZE,
+        bbox_to_anchor=(0.75, 0.5),
+        fontsize=CHART_FONTS["legend"],
+        title_fontsize=CHART_FONTS["legend_title"],
         ncol=1,
-        frameon=False,
+        frameon=True,
+        borderpad=0.8,
+        labelspacing=0.6,
+        columnspacing=1.4,
     )
     plt.savefig(chart_file, dpi=150)
     plt.close()
@@ -459,6 +502,8 @@ def save_plotly_position_distribution_pie_chart(
         title_text=chart_title,
         template="plotly_white",
         height=720,
+        font={"family": PLOTLY_FONT_FAMILY, "size": 13, "color": "#1f2933"},
+        title={"font": {"size": 22}, "x": 0.02, "xanchor": "left"},
         showlegend=True,
         legend={
             "orientation": "v",
@@ -466,8 +511,10 @@ def save_plotly_position_distribution_pie_chart(
             "y": 1,
             "xanchor": "left",
             "yanchor": "top",
+            "font": {"size": 12},
+            "title": {"font": {"size": 13}},
         },
-        margin={"b": 80, "r": 220},
+        margin={"t": 80, "b": 90, "l": 60, "r": 260},
     )
     figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
 

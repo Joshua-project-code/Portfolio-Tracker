@@ -964,8 +964,8 @@ class ReportRunnerTests(unittest.TestCase):
     def test_get_generated_output_names_returns_existing_csv_files_only(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir)
-            mapping_path = output_path / "project" / "stock_code_mapping.csv"
-            mapping_path.parent.mkdir()
+            mapping_path = output_path / "project" / "data" / "stock_code_mapping.csv"
+            mapping_path.parent.mkdir(parents=True)
             today = "2026-04-30"
             (output_path / f"transactions_{today}.csv").write_text("", encoding="utf-8")
             mapping_path.write_text("", encoding="utf-8")
@@ -1015,7 +1015,7 @@ class ReportRunnerTests(unittest.TestCase):
                 with patch.object(
                     report_runner,
                     "DEFAULT_STOCK_CODE_MAPPING_PATH",
-                    output_path / "stock_code_mapping.csv",
+                    output_path / "data" / "stock_code_mapping.csv",
                 ):
                     with patch.object(
                         report_runner,
@@ -1055,7 +1055,7 @@ class ReportRunnerTests(unittest.TestCase):
                                                                 [], [], transactions, positions
                                                             )
 
-            saved = pd.read_csv(output_path / "stock_code_mapping.csv")
+            saved = pd.read_csv(output_path / "data" / "stock_code_mapping.csv")
             self.assertEqual(saved.loc[0, "stock_code"], "ACME")
             self.assertEqual(saved.loc[0, "stock_name"], "Acme Corp")
 

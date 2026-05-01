@@ -11,7 +11,7 @@ The main script combines the broker data into:
 
 - `transactions_df`: stock buy/sell transaction history from POEMS and Interactive Brokers
 - `positions_df`: current investment positions from POEMS and Interactive Brokers
-- `stock_code_mapping.csv`: a persisted mapping from stock code to latest stock
+- `data/stock_code_mapping.csv`: a persisted mapping from stock code to latest stock
   name, with previous stock names retained when a broker reports a changed name
   for the same stock code
 
@@ -33,12 +33,13 @@ Vibe Coding/
 |   +-- portfolio_tracker/
 |   +-- data/
 |   |   +-- stock_mapping.csv
+|   |   +-- stock_code_mapping.csv
 |   +-- docs/
 ```
 
 ## Project Structure
 
-The repository is organized so the root stays small:
+The repository is organized so the root stays small and generated report output stays outside the package:
 
 ```text
 Portfolio Tracker/
@@ -48,12 +49,12 @@ Portfolio Tracker/
 |   +-- templates/                  # Flask templates
 +-- data/
 |   +-- stock_mapping.csv           # Editable sector/geography mapping
+|   +-- stock_code_mapping.csv      # Generated local stock-code/name history
 +-- docs/
 |   +-- PYTHON_FILES.md             # Module reference
 |   +-- testapp.md                  # Test case catalogue
 +-- tests/
 |   +-- test_project.py             # Automated test suite
-+-- stock_code_mapping.csv          # Generated local stock-code/name history
 ```
 
 ## Generated Files
@@ -62,12 +63,12 @@ The parser writes generated files that should not be committed:
 
 - `../Output/transactions_YYYY-MM-DD.csv`
 - `../Output/positions_YYYY-MM-DD.csv`
-- `../Output/*.png` static chart files
-- `../Output/*.html` interactive Plotly chart files
-- `stock_code_mapping.csv` in the project folder
+- `../Output/seaborn_*.png` static chart files
+- `../Output/plotly_*.html` interactive Plotly chart files
+- `data/stock_code_mapping.csv`
 
 The committed editable mapping is `data/stock_mapping.csv`. It is separate from
-the generated `stock_code_mapping.csv`.
+the generated `data/stock_code_mapping.csv`.
 
 ### POEMS Files
 
@@ -114,7 +115,7 @@ The parser uses this mapping to create investment-position pie charts. If you
 want to change a stock's sector or geography, or if a new stock appears as
 `Unmapped`, update `data/stock_mapping.csv` directly.
 
-This file is separate from the generated project-root `stock_code_mapping.csv`,
+This file is separate from the generated `data/stock_code_mapping.csv`,
 which is produced automatically from broker reports and should be treated as
 parser output rather than a sector/geography classification file.
 
@@ -153,6 +154,8 @@ Click `Run Report` to parse the broker files and view:
 The Charts section includes a `Seaborn` / `Plotly` toggle. Each report run
 generates both chart sets. The Seaborn view is shown by default, and the
 interactive Plotly view can be selected without re-running the report.
+Both chart types use dashboard-oriented typography with right-side legends so
+the plot area remains readable and legend text is not clipped.
 
 The web tables format selected numeric columns to two decimal places and align
 numeric cells to the right for readability. This display formatting does not
@@ -197,13 +200,12 @@ The script will print:
 - Top 20 transaction records sorted by transaction date
 - Top 30 investment position records sorted by market value descending
 - Duplicate-record warnings, if duplicates exist
-- Monthly investment-position and transaction-amount line charts by broker and currency saved to `Output`
-- Seaborn versions of the monthly line charts saved to `Output`
-- Plotly interactive HTML versions of the monthly line charts saved to `Output`
-- Sector and geography investment-position pie charts by currency saved to `Output`; slices under 10% are grouped as `Others`
-- Seaborn-styled versions of the sector and geography pie charts saved to `Output`
-- Plotly interactive HTML versions of the sector and geography pie charts saved to `Output`
-- A persistent `stock_code_mapping.csv` file saved to the project folder, with columns
+- Seaborn PNG and Plotly HTML monthly investment-position line charts by broker and currency saved to `Output`
+- Seaborn PNG and Plotly HTML monthly transaction-amount line charts by broker and currency saved to `Output`
+- Seaborn PNG and Plotly HTML sector and geography investment-position pie charts by currency saved to `Output`; slices under 10% are grouped as `Others`
+- Chart titles, axes, ticks, legends, and pie percentages use role-specific font sizes for readability
+- Line and pie chart legends are placed on the right side of the plot area
+- A persistent `data/stock_code_mapping.csv` file saved with columns
   `stock_code`, `stock_name`, and `old_stock_names`
 
 The script also saves the output CSV files into the parent-level `Output` folder
@@ -224,10 +226,6 @@ Vibe Coding/
 +-- Output/
 |   +-- transactions_2026-04-28.csv
 |   +-- positions_2026-04-28.csv
-|   +-- investment_positions_by_month_2026-04-28.png
-|   +-- transactions_by_month_2026-04-28.png
-|   +-- sector_distribution_2026-04-28.png
-|   +-- geography_distribution_2026-04-28.png
 |   +-- seaborn_investment_positions_by_month_2026-04-28.png
 |   +-- seaborn_transactions_by_month_2026-04-28.png
 |   +-- seaborn_sector_distribution_2026-04-28.png
@@ -237,7 +235,8 @@ Vibe Coding/
 |   +-- plotly_sector_distribution_2026-04-28.html
 |   +-- plotly_geography_distribution_2026-04-28.html
 +-- Portfolio Tracker/
-|   +-- stock_code_mapping.csv
+|   +-- data/
+|   |   +-- stock_code_mapping.csv
 ```
 
 ## Optional Root Folder Argument

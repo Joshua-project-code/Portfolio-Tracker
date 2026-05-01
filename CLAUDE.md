@@ -12,6 +12,7 @@ The main workflow is:
 2. Parse transactions and current positions into shared schemas.
 3. Print duplicate-row warnings and table previews.
 4. Save dated CSV files, Seaborn PNG charts, and Plotly HTML charts into the sibling `Output` folder.
+5. Maintain `data/stock_code_mapping.csv` as generated parser output and `data/stock_mapping.csv` as the editable sector/geography input.
 
 The Flask web app can also upload new POEMS workbook files and Interactive
 Brokers CSV files into those sibling folders, then re-run the parser workflow
@@ -66,19 +67,20 @@ python -m unittest discover -s tests -v
 - `portfolio_tracker/report_runner.py`: Shared report workflow used by the CLI and web app, including broker file discovery, dataframe construction, console preview output, CSV/chart generation, chart-set response serialization, and web table serialization.
 - `portfolio_tracker/templates/index.html`: Main web app page rendered by Flask.
 - `portfolio_tracker/static/app.js`: Frontend upload, report, Seaborn/Plotly chart-library toggle, cleanup confirmation, delete-result handling, and rendering logic.
-- `portfolio_tracker/static/styles.css`: Web app styles.
+- `portfolio_tracker/static/styles.css`: Web app styles, including the dashboard font stack, responsive layout, chart containers, and testing page styles.
 - `portfolio_tracker/constants.py`: Shared paths, extensions, and canonical output schemas.
 - `portfolio_tracker/file_helpers.py`: File discovery, folder creation, sheet lookup, column cleanup, and broker-name inference.
 - `portfolio_tracker/poems_parser.py`: POEMS Excel transaction and position parsing.
 - `portfolio_tracker/interactive_brokers_parser.py`: Interactive Brokers CSV section, transaction, and position parsing.
 - `portfolio_tracker/stock_mapping.py`: Loads `data/stock_mapping.csv` and adds sector/geography metadata to positions.
-- `portfolio_tracker/stock_code_mapping.py`: Builds and persists project-root `stock_code_mapping.csv`, mapping stock codes to latest stock names and retaining old stock names when names change.
-- `portfolio_tracker/chart_helpers.py`: Builds monthly summaries and saves Seaborn and Plotly line/pie charts.
+- `portfolio_tracker/stock_code_mapping.py`: Builds and persists generated `data/stock_code_mapping.csv`, mapping stock codes to latest stock names and retaining old stock names when names change.
+- `portfolio_tracker/chart_helpers.py`: Builds monthly summaries and saves Seaborn and Plotly line/pie charts with role-specific font sizes, right-side legends, currency-separated pies, and small-slice aggregation.
 - `portfolio_tracker/output_helpers.py`: Writes dated CSV output files.
 - `portfolio_tracker/validation.py`: Prints duplicate full-row warnings.
 - `data/stock_mapping.csv`: User-editable stock-to-sector/geography mapping.
+- `data/stock_code_mapping.csv`: Generated stock-code/name history from broker reports.
 - `tests/test_project.py`: Automated unittest coverage for parser helpers, broker parsers, report workflow helpers, output helpers, stock mapping, chart aggregation, validation output, and Flask routes.
-- `docs/testapp.md`: Test case catalogue with each test's description and expected observed output.
+- `docs/testapp.md`: Test case catalogue with each test's description and expected observed output. It currently tracks 73 tests.
 - `docs/PYTHON_FILES.md`: Python module reference.
 
 ## Data Contracts
@@ -115,7 +117,7 @@ Vibe Coding/
 |   +-- docs/
 ```
 
-Do not commit broker exports or generated outputs. `.gitignore` already excludes local broker folders, `Output`, root-level `stock_code_mapping.csv`, Python caches, virtual environments, and Matplotlib cache files.
+Do not commit broker exports or generated outputs. `.gitignore` already excludes local broker folders, `Output`, generated `data/stock_code_mapping.csv`, Python caches, virtual environments, and Matplotlib cache files.
 
 ## Coding Guidelines
 
@@ -130,6 +132,7 @@ Do not commit broker exports or generated outputs. `.gitignore` already excludes
 - Use pandas operations for tabular parsing and transformation.
 - Keep broker-specific parsing inside the broker parser modules.
 - Keep chart generation inside `chart_helpers.py`.
+- Preserve chart readability: use role-specific typography, avoid overlapping labels, and keep line and pie chart legends on the right side of the plot area unless the user asks for a different layout.
 - Keep filesystem path and discovery logic inside `file_helpers.py`.
 - Avoid broad refactors unless needed for the requested change.
 - Keep all Markdown documentation up to date when implementing changes,

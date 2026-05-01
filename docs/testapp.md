@@ -6,7 +6,7 @@ Run all tests from the project folder with:
 python -m unittest discover -s tests -v
 ```
 
-The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required.
+The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 73 catalogued test cases.
 
 Keep this catalogue synchronized with `tests/test_project.py`. Whenever a test
 is added, removed, renamed, or materially changed, update the matching catalogue
@@ -76,9 +76,9 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-060 | `test_build_stock_code_mapping_preserves_old_names_when_name_changes` | Merges a current stock name with an existing mapping for the same stock code. | Latest `stock_name` is updated and previous names are retained in `old_stock_names`. |
 | TC-061 | `test_build_stock_code_mapping_allows_missing_stock_name` | Builds a mapping row when a stock code has no stock name. | Returns the stock code with `stock_name` and `old_stock_names` as `NaN`. |
 | TC-062 | `test_save_stock_code_mapping_persists_and_updates_history` | Saves the stock-code mapping CSV and updates it on a later name change. | `stock_code_mapping.csv` persists the latest name and stores the earlier name in `old_stock_names`. |
-| TC-063 | `test_save_report_outputs_writes_stock_code_mapping` | Ensures the report output workflow writes the stock-code mapping file. | Project mapping path contains `stock_code_mapping.csv` with the parsed stock code and stock name. |
-| TC-064 | `test_output_file_serves_project_stock_code_mapping` | Serves the project-root stock-code mapping CSV through the output download route. | HTTP 200 response includes the persisted stock-code mapping CSV content. |
-| TC-065 | `test_save_seaborn_position_distribution_pie_chart_uses_large_readable_canvas` | Generates a populated Seaborn-styled pie chart and checks that the saved PNG has enough pixel area for readable web display. | Saved chart image is at least 1000 pixels wide and 900 pixels tall. |
+| TC-063 | `test_save_report_outputs_writes_stock_code_mapping` | Ensures the report output workflow writes the stock-code mapping file. | The configured data-folder mapping path contains `stock_code_mapping.csv` with the parsed stock code and stock name. |
+| TC-064 | `test_output_file_serves_project_stock_code_mapping` | Serves the generated data-folder stock-code mapping CSV through the output download route. | HTTP 200 response includes the persisted stock-code mapping CSV content. |
+| TC-065 | `test_save_seaborn_position_distribution_pie_chart_uses_large_readable_canvas` | Generates a populated Seaborn-styled pie chart and checks that the saved PNG has enough pixel area for readable web display with its right-side legend area. | Saved chart image is at least 1000 pixels wide and 900 pixels tall. |
 | TC-066 | `test_set_matplotlib_cache_dir_uses_non_gui_backend` | Verifies chart generation uses a non-GUI Matplotlib backend. | Matplotlib backend is `agg`, avoiding GUI warnings during Flask request-thread chart rendering. |
 | TC-067 | `test_delete_broker_files_api_removes_files_from_source_folders` | Delete Broker Files API removes files from the configured POEMS and Interactive Brokers source folders. | HTTP 200 with `deleted_count` of 2; source files are gone and both folders remain. |
 | TC-068 | `test_delete_output_files_api_removes_files_from_output_folder` | Delete Output Files API removes generated files from the configured Output folder. | HTTP 200 with `deleted_count` of 2; the Output folder remains empty and still exists. |
