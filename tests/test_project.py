@@ -31,6 +31,7 @@ from portfolio_tracker.etf_country_exposure import (
     build_country_exposure_totals_dataframe,
     fill_missing_stock_codes_from_mapping,
     load_etf_country_matrix,
+    save_country_exposure_pie_charts,
 )
 from portfolio_tracker.file_helpers import (
     clean_column_name,
@@ -605,23 +606,27 @@ class EtfCountryExposureTests(unittest.TestCase):
     def test_fill_missing_stock_codes_from_mapping_uses_old_stock_names(self) -> None:
         positions = pd.DataFrame(
             {
-                "stock_name": ["VGD TOT WLD STK"],
-                "stock_code": [pd.NA],
-                "currency": ["USD"],
-                "market_value": [100.0],
+                "stock_name": ["VGD TOT WLD STK", "VGD S&P 500 ETF"],
+                "stock_code": [pd.NA, ""],
+                "currency": ["USD", "USD"],
+                "market_value": [100.0, 50.0],
             }
         )
         mapping = pd.DataFrame(
             {
-                "stock_code": ["VT"],
-                "stock_name": ["Vanguard Total World Stock ETF"],
-                "old_stock_names": ["VGD TOT WLD STK"],
+                "stock_code": ["VT", "VOO"],
+                "stock_name": [
+                    "Vanguard Total World Stock ETF",
+                    "Vanguard S&P 500 ETF",
+                ],
+                "old_stock_names": ["VGD TOT WLD STK", "VGD S&P 500 ETF"],
             }
         )
 
         updated = fill_missing_stock_codes_from_mapping(positions, mapping)
 
         self.assertEqual(updated.loc[0, "stock_code"], "VT")
+        self.assertEqual(updated.loc[1, "stock_code"], "VOO")
 
     def test_build_country_exposure_totals_dataframe_pivots_country_values(self) -> None:
         exposure = pd.DataFrame(
@@ -671,6 +676,27 @@ class EtfCountryExposureTests(unittest.TestCase):
 
         self.assertEqual(aggregated["country"].tolist(), ["A", "B", "C", "D", "Others"])
         self.assertEqual(aggregated.loc[4, "investment_value"], 5.0)
+
+    def test_save_country_exposure_pie_charts_uses_supplied_date(self) -> None:
+        totals = pd.DataFrame(
+            {
+                "currency": ["USD"],
+                "country": ["United States"],
+                "investment_value": [100.0],
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir)
+            save_country_exposure_pie_charts(
+                totals,
+                output_path,
+                generated_on="2026-04-30",
+            )
+
+            self.assertTrue(
+                (output_path / "country_exposure_pie_USD_2026-04-30.png").is_file()
+            )
 
 
 class StockCodeMappingTests(unittest.TestCase):
@@ -963,6 +989,20 @@ class OutputAndValidationTests(unittest.TestCase):
             self.assertEqual(len(files), 2)
             self.assertTrue(files[0].startswith("positions_"))
             self.assertTrue(files[1].startswith("transactions_"))
+
+    def test_save_dataframes_to_csv_accepts_supplied_date(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir)
+
+            save_dataframes_to_csv(
+                pd.DataFrame({"transaction": [1]}),
+                pd.DataFrame({"position": [2]}),
+                output_path,
+                generated_on="2026-04-30",
+            )
+
+            self.assertTrue((output_path / "transactions_2026-04-30.csv").is_file())
+            self.assertTrue((output_path / "positions_2026-04-30.csv").is_file())
 
     def test_print_duplicate_records_message_outputs_duplicate_rows_only(self) -> None:
         dataframe = pd.DataFrame({"a": [1, 1, 2], "b": ["x", "x", "y"]})

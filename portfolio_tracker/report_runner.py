@@ -49,6 +49,33 @@ from .stock_code_mapping import save_stock_code_mapping
 from .validation import print_duplicate_records_message
 
 
+OUTPUT_CSV_PATTERNS = [
+    "transactions_{today}.csv",
+    "positions_{today}.csv",
+    "country_exposure_{today}.csv",
+    "country_exposure_totals_{today}.csv",
+]
+SEABORN_CHART_PATTERNS = [
+    "seaborn_investment_positions_by_month_{today}.png",
+    "seaborn_transactions_by_month_{today}.png",
+    "seaborn_sector_distribution_{today}.png",
+    "seaborn_geography_distribution_{today}.png",
+    "country_exposure_pie_SGD_{today}.png",
+    "country_exposure_pie_USD_{today}.png",
+]
+PLOTLY_CHART_PATTERNS = [
+    "plotly_investment_positions_by_month_{today}.html",
+    "plotly_transactions_by_month_{today}.html",
+    "plotly_sector_distribution_{today}.html",
+    "plotly_geography_distribution_{today}.html",
+]
+
+
+def format_generated_names(patterns: list[str], today: str) -> list[str]:
+    """Format date-stamped generated output filenames."""
+    return [pattern.format(today=today) for pattern in patterns]
+
+
 def wait_for_broker_files(
     broker_name: str,
     folder_path: Path,
@@ -157,13 +184,29 @@ def save_report_outputs(
     positions_df: pd.DataFrame,
 ) -> None:
     """Save report CSV files and chart images to the configured output folder."""
-    save_dataframes_to_csv(transactions_df, positions_df, DEFAULT_OUTPUT_PATH)
+    today = date.today().isoformat()
+    save_dataframes_to_csv(
+        transactions_df,
+        positions_df,
+        DEFAULT_OUTPUT_PATH,
+        generated_on=today,
+    )
     stock_code_mapping_df = save_stock_code_mapping(
         transactions_df,
         positions_df,
         DEFAULT_STOCK_CODE_MAPPING_PATH,
     )
-    today = date.today().isoformat()
+    save_country_exposure_outputs(positions_df, stock_code_mapping_df, today)
+    save_monthly_charts(workbooks, csv_files, transactions_df)
+    save_position_distribution_charts(positions_df)
+
+
+def save_country_exposure_outputs(
+    positions_df: pd.DataFrame,
+    stock_code_mapping_df: pd.DataFrame,
+    today: str,
+) -> None:
+    """Save country exposure CSVs and pie charts."""
     etf_country_matrix = load_etf_country_matrix(DEFAULT_ETF_COUNTRY_MATRIX_PATH)
     country_positions_df = fill_missing_stock_codes_from_mapping(
         positions_df, stock_code_mapping_df
@@ -184,13 +227,29 @@ def save_report_outputs(
         DEFAULT_OUTPUT_PATH / f"country_exposure_totals_{today}.csv",
         "country exposure totals dataframe",
     )
-    save_country_exposure_pie_charts(country_exposure_totals_df, DEFAULT_OUTPUT_PATH)
+    save_country_exposure_pie_charts(
+        country_exposure_totals_df,
+        DEFAULT_OUTPUT_PATH,
+        generated_on=today,
+    )
+
+
+def save_monthly_charts(
+    workbooks: list[Path],
+    csv_files: list[Path],
+    transactions_df: pd.DataFrame,
+) -> None:
+    """Save monthly position and transaction charts."""
     monthly_totals_df = build_monthly_position_totals(workbooks, csv_files)
     save_seaborn_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
     save_plotly_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
     monthly_transactions_df = build_monthly_transaction_totals(transactions_df)
     save_seaborn_monthly_transaction_chart(monthly_transactions_df, DEFAULT_OUTPUT_PATH)
     save_plotly_monthly_transaction_chart(monthly_transactions_df, DEFAULT_OUTPUT_PATH)
+
+
+def save_position_distribution_charts(positions_df: pd.DataFrame) -> None:
+    """Save sector and geography distribution charts."""
     stock_mapping_df = load_stock_mapping(DEFAULT_STOCK_MAPPING_PATH)
     mapped_positions_df = enrich_positions_with_mapping(positions_df, stock_mapping_df)
     save_seaborn_position_distribution_pie_chart(
@@ -250,12 +309,7 @@ def format_table_value(value: Any) -> Any:
 
 def get_generated_output_names(today: str) -> tuple[list[str], list[str]]:
     """Return generated CSV names and an empty legacy chart list."""
-    output_csv_names = [
-        f"transactions_{today}.csv",
-        f"positions_{today}.csv",
-        f"country_exposure_{today}.csv",
-        f"country_exposure_totals_{today}.csv",
-    ]
+    output_csv_names = format_generated_names(OUTPUT_CSV_PATTERNS, today)
 
     existing_csvs = [
         name for name in output_csv_names if (DEFAULT_OUTPUT_PATH / name).exists()
@@ -268,20 +322,8 @@ def get_generated_output_names(today: str) -> tuple[list[str], list[str]]:
 
 def get_generated_chart_sets(today: str) -> dict[str, list[str]]:
     """Return generated chart names by chart library for the given date."""
-    seaborn_chart_names = [
-        f"seaborn_investment_positions_by_month_{today}.png",
-        f"seaborn_transactions_by_month_{today}.png",
-        f"seaborn_sector_distribution_{today}.png",
-        f"seaborn_geography_distribution_{today}.png",
-        f"country_exposure_pie_SGD_{today}.png",
-        f"country_exposure_pie_USD_{today}.png",
-    ]
-    plotly_chart_names = [
-        f"plotly_investment_positions_by_month_{today}.html",
-        f"plotly_transactions_by_month_{today}.html",
-        f"plotly_sector_distribution_{today}.html",
-        f"plotly_geography_distribution_{today}.html",
-    ]
+    seaborn_chart_names = format_generated_names(SEABORN_CHART_PATTERNS, today)
+    plotly_chart_names = format_generated_names(PLOTLY_CHART_PATTERNS, today)
     seaborn_charts = [
         name for name in seaborn_chart_names if (DEFAULT_OUTPUT_PATH / name).exists()
     ]

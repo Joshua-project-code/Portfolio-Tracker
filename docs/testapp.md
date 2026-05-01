@@ -6,7 +6,7 @@ Run all tests from the project folder with:
 python -m unittest discover -s tests -v
 ```
 
-The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 78 catalogued test cases.
+The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 80 catalogued test cases.
 
 Keep this catalogue synchronized with `tests/test_project.py`. Whenever a test
 is added, removed, renamed, or materially changed, update the matching catalogue
@@ -45,11 +45,6 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-029 | `test_normalize_stock_name_uppercases_strips_and_handles_missing_values` | Normalizes stock names for lookups. | Returns `["ACME", ""]`. |
 | TC-030 | `test_enrich_positions_with_mapping_adds_sector_and_geography` | Adds sector/geography data to positions and flags unmapped rows. | Known stock gets mapped values; unknown stock gets `Unmapped`. |
 | TC-031 | `test_enrich_positions_with_mapping_empty_positions_returns_expected_columns` | Handles empty positions during mapping enrichment. | Returns empty DataFrame with `sector` and `geography` columns. |
-| TC-074 | `test_load_etf_country_matrix_normalizes_codes_and_percentages` | Loads the ETF country matrix and normalizes stock codes and percentage values. | Stock code is uppercased and blank country percentages become `0`. |
-| TC-075 | `test_build_country_exposure_dataframe_multiplies_percentages_by_market_value` | Builds per-position country exposure by multiplying ETF country percentages by market value. | Country columns contain absolute exposure values, and unmatched stocks receive zero exposure. |
-| TC-076 | `test_fill_missing_stock_codes_from_mapping_uses_old_stock_names` | Uses saved current and historical stock names to fill missing position stock codes before country exposure calculation. | Missing code for `VGD TOT WLD STK` is filled as `VT`. |
-| TC-077 | `test_build_country_exposure_totals_dataframe_pivots_country_values` | Pivots wide country exposure data into currency/country totals. | Returns `currency`, `country`, and `investment_value` rows sorted by currency and value. |
-| TC-078 | `test_aggregate_country_totals_for_pie_keeps_top_four_plus_others` | Aggregates country totals for pie charts with a maximum of five slices. | Keeps the top four countries and combines the remaining value into `Others`. |
 | TC-032 | `test_build_monthly_transaction_totals_groups_by_month_broker_and_currency` | Aggregates transaction amounts by month, broker, and currency. | April POEMS USD total is `150`; May IB SGD total is separate. |
 | TC-033 | `test_build_monthly_transaction_totals_empty_input_returns_schema` | Handles empty transaction input. | Returns empty monthly transaction DataFrame with expected columns. |
 | TC-034 | `test_aggregate_small_pie_slices_groups_values_below_threshold_as_others` | Groups small pie slices under the threshold. | Small categories combine into an `Others` row worth `10`. |
@@ -92,3 +87,10 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-071 | `test_get_generated_chart_sets_returns_seaborn_and_plotly_names` | Lists generated chart names grouped by chart library, including country exposure pie charts in the Seaborn set. | Returns separate `seaborn` and `plotly` chart lists with country exposure PNG names when they exist. |
 | TC-072 | `test_save_plotly_monthly_position_chart_creates_html_file` | Generates a Plotly monthly investment-position line chart. | Creates `plotly_investment_positions_by_month_YYYY-MM-DD.html` containing Plotly markup. |
 | TC-073 | `test_save_plotly_position_distribution_pie_chart_creates_html_file` | Generates a Plotly position distribution pie chart. | Creates `plotly_sector_distribution_YYYY-MM-DD.html` containing Plotly markup. |
+| TC-074 | `test_load_etf_country_matrix_normalizes_codes_and_percentages` | Loads the ETF country matrix and normalizes stock codes and percentage values. | Stock code is uppercased and blank country percentages become `0`. |
+| TC-075 | `test_build_country_exposure_dataframe_multiplies_percentages_by_market_value` | Builds per-position country exposure by multiplying ETF country percentages by market value. | Country columns contain absolute exposure values, and unmatched stocks receive zero exposure. |
+| TC-076 | `test_fill_missing_stock_codes_from_mapping_uses_old_stock_names` | Uses saved current and historical stock names to fill missing position stock codes before country exposure calculation. | Missing and blank position stock codes are filled from saved current or historical stock names. |
+| TC-077 | `test_build_country_exposure_totals_dataframe_pivots_country_values` | Pivots wide country exposure data into currency/country totals. | Returns `currency`, `country`, and `investment_value` rows sorted by currency and value. |
+| TC-078 | `test_aggregate_country_totals_for_pie_keeps_top_four_plus_others` | Aggregates country totals for pie charts with a maximum of five slices. | Keeps the top four countries and combines the remaining value into `Others`. |
+| TC-079 | `test_save_country_exposure_pie_charts_uses_supplied_date` | Saves country exposure pie charts using the report date supplied by the caller. | Creates a country exposure PNG with the supplied `YYYY-MM-DD` date in the filename. |
+| TC-080 | `test_save_dataframes_to_csv_accepts_supplied_date` | Saves transaction and position CSV files using the report date supplied by the caller. | Creates `transactions_2026-04-30.csv` and `positions_2026-04-30.csv`. |

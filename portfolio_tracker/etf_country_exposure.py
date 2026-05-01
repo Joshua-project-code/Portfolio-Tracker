@@ -112,6 +112,7 @@ def save_country_exposure_pie_charts(
     country_totals_df: pd.DataFrame,
     output_path: Path,
     max_slices: int = 5,
+    generated_on: str | None = None,
 ) -> None:
     """Save one country exposure pie chart per currency."""
     if country_totals_df.empty:
@@ -140,6 +141,7 @@ def save_country_exposure_pie_charts(
     )
     chart_totals = chart_totals.dropna(subset=["investment_value"])
 
+    chart_date = generated_on or pd.Timestamp.today().date().isoformat()
     for currency in chart_totals["currency"].dropna().unique():
         currency_totals = chart_totals[chart_totals["currency"] == currency]
         currency_totals = aggregate_country_totals_for_pie(
@@ -151,7 +153,7 @@ def save_country_exposure_pie_charts(
 
         chart_file = (
             output_path
-            / f"country_exposure_pie_{currency}_{pd.Timestamp.today().date().isoformat()}.png"
+            / f"country_exposure_pie_{currency}_{chart_date}.png"
         )
         action = "Overwriting existing" if chart_file.exists() else "Creating new"
 
@@ -240,9 +242,9 @@ def fill_missing_stock_codes_from_mapping(
         .str.upper()
         .map(stock_code_by_name)
     )
-    positions.loc[missing_code, "stock_code"] = positions.loc[
-        missing_code, "stock_code"
-    ].combine_first(mapped_codes)
+    positions.loc[missing_code, "stock_code"] = mapped_codes.combine_first(
+        positions.loc[missing_code, "stock_code"]
+    )
     return positions
 
 

@@ -11,7 +11,7 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `portfolio_tracker/constants.py` | Defines shared paths, supported file extensions, and the standard transaction and position dataframe column schemas. |
 | `portfolio_tracker/etf_country_exposure.py` | Loads `data/etf_country_matrix.csv`, builds per-position country exposure values, pivots them into currency/country totals, fills missing stock codes from the generated stock-code mapping, and saves SGD/USD country exposure pie charts. |
 | `portfolio_tracker/file_helpers.py` | Provides reusable file and spreadsheet helpers, including workbook and CSV discovery, Excel sheet lookup, column-name cleanup, and broker-name inference from folder paths. |
-| `portfolio_tracker/output_helpers.py` | Saves generated transaction and position dataframes to dated CSV files, overwriting only matching filenames. |
+| `portfolio_tracker/output_helpers.py` | Saves generated transaction and position dataframes to dated CSV files, using the report date when supplied and overwriting only matching filenames. |
 | `portfolio_tracker/chart_helpers.py` | Builds chart-ready summaries and saves Seaborn PNG and Plotly HTML monthly line charts and sector/geography pie charts, including role-specific typography, right-side legends, currency separation, and small-slice aggregation into `Others`. |
 | `portfolio_tracker/stock_mapping.py` | Loads `data/stock_mapping.csv`, normalizes stock names, and enriches positions with sector and geography classifications. |
 | `portfolio_tracker/stock_code_mapping.py` | Builds and persists generated `data/stock_code_mapping.csv`, mapping immutable stock codes to the latest stock name while retaining historical stock names when names change. |

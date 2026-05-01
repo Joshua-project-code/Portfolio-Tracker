@@ -14,11 +14,14 @@ from .file_helpers import ensure_folder_exists
 
 
 def save_dataframes_to_csv(
-    transactions_df: pd.DataFrame, positions_df: pd.DataFrame, output_path: Path
+    transactions_df: pd.DataFrame,
+    positions_df: pd.DataFrame,
+    output_path: Path,
+    generated_on: str | None = None,
 ) -> None:
     """Save the final dataframes as dated CSV files in the output folder."""
     ensure_folder_exists(output_path)
-    today = date.today().isoformat()
+    today = generated_on or date.today().isoformat()
 
     transactions_file = output_path / f"transactions_{today}.csv"
     positions_file = output_path / f"positions_{today}.csv"
