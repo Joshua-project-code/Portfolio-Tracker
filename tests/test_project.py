@@ -6,7 +6,8 @@ import tempfile
 import unittest
 import uuid
 import zipfile
-from contextlib import redirect_stdout
+from contextlib import ExitStack, redirect_stdout
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -24,6 +25,13 @@ from portfolio_tracker.chart_helpers import (
     set_matplotlib_cache_dir,
 )
 from portfolio_tracker.constants import POSITION_COLUMNS, TRANSACTION_COLUMNS
+from portfolio_tracker.etf_country_exposure import (
+    aggregate_country_totals_for_pie,
+    build_country_exposure_dataframe,
+    build_country_exposure_totals_dataframe,
+    fill_missing_stock_codes_from_mapping,
+    load_etf_country_matrix,
+)
 from portfolio_tracker.file_helpers import (
     clean_column_name,
     ensure_folder_exists,
@@ -546,6 +554,125 @@ class StockMappingTests(unittest.TestCase):
         self.assertTrue(enriched.empty)
 
 
+class EtfCountryExposureTests(unittest.TestCase):
+    def test_load_etf_country_matrix_normalizes_codes_and_percentages(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            matrix_path = Path(temp_dir) / "etf_country_matrix.csv"
+            pd.DataFrame(
+                {
+                    "ETF Name": ["Fund"],
+                    "Stock Code": [" voo "],
+                    "United States": ["100.0"],
+                    "Japan": [None],
+                }
+            ).to_csv(matrix_path, index=False)
+
+            matrix = load_etf_country_matrix(matrix_path)
+
+            self.assertEqual(matrix.loc[0, "Stock Code"], "VOO")
+            self.assertEqual(matrix.loc[0, "United States"], 100.0)
+            self.assertEqual(matrix.loc[0, "Japan"], 0)
+
+    def test_build_country_exposure_dataframe_multiplies_percentages_by_market_value(self) -> None:
+        positions = pd.DataFrame(
+            {
+                "stock_name": ["Vanguard S&P 500 ETF", "Single Stock"],
+                "stock_code": ["voo", "ACME"],
+                "currency": ["USD", "SGD"],
+                "market_value": [250.0, 100.0],
+            }
+        )
+        matrix = pd.DataFrame(
+            {
+                "ETF Name": ["VOO"],
+                "Stock Code": ["VOO"],
+                "United States": [80.0],
+                "Japan": [20.0],
+            }
+        )
+
+        exposure = build_country_exposure_dataframe(positions, matrix)
+
+        self.assertEqual(
+            exposure.columns.tolist(),
+            ["stock_name", "stock_code", "currency", "United States", "Japan"],
+        )
+        self.assertEqual(exposure.loc[0, "United States"], 200.0)
+        self.assertEqual(exposure.loc[0, "Japan"], 50.0)
+        self.assertEqual(exposure.loc[1, "United States"], 0)
+        self.assertEqual(exposure.loc[1, "Japan"], 0)
+
+    def test_fill_missing_stock_codes_from_mapping_uses_old_stock_names(self) -> None:
+        positions = pd.DataFrame(
+            {
+                "stock_name": ["VGD TOT WLD STK"],
+                "stock_code": [pd.NA],
+                "currency": ["USD"],
+                "market_value": [100.0],
+            }
+        )
+        mapping = pd.DataFrame(
+            {
+                "stock_code": ["VT"],
+                "stock_name": ["Vanguard Total World Stock ETF"],
+                "old_stock_names": ["VGD TOT WLD STK"],
+            }
+        )
+
+        updated = fill_missing_stock_codes_from_mapping(positions, mapping)
+
+        self.assertEqual(updated.loc[0, "stock_code"], "VT")
+
+    def test_build_country_exposure_totals_dataframe_pivots_country_values(self) -> None:
+        exposure = pd.DataFrame(
+            {
+                "stock_name": ["Fund A", "Fund B", "Fund C"],
+                "stock_code": ["A", "B", "C"],
+                "currency": ["USD", "USD", "SGD"],
+                "United States": [80.0, 20.0, 0.0],
+                "Singapore": [0.0, 0.0, 50.0],
+                "Japan": [20.0, 0.0, 0.0],
+            }
+        )
+
+        totals = build_country_exposure_totals_dataframe(exposure)
+
+        self.assertEqual(
+            totals.columns.tolist(),
+            ["currency", "country", "investment_value"],
+        )
+        self.assertEqual(
+            totals.to_dict("records"),
+            [
+                {
+                    "currency": "SGD",
+                    "country": "Singapore",
+                    "investment_value": 50.0,
+                },
+                {
+                    "currency": "USD",
+                    "country": "United States",
+                    "investment_value": 100.0,
+                },
+                {"currency": "USD", "country": "Japan", "investment_value": 20.0},
+            ],
+        )
+
+    def test_aggregate_country_totals_for_pie_keeps_top_four_plus_others(self) -> None:
+        totals = pd.DataFrame(
+            {
+                "currency": ["USD"] * 6,
+                "country": ["A", "B", "C", "D", "E", "F"],
+                "investment_value": [60.0, 20.0, 10.0, 5.0, 3.0, 2.0],
+            }
+        )
+
+        aggregated = aggregate_country_totals_for_pie(totals, max_slices=5)
+
+        self.assertEqual(aggregated["country"].tolist(), ["A", "B", "C", "D", "Others"])
+        self.assertEqual(aggregated.loc[4, "investment_value"], 5.0)
+
+
 class StockCodeMappingTests(unittest.TestCase):
     def test_extract_stock_code_name_pairs_combines_transactions_and_positions(self) -> None:
         transactions = pd.DataFrame(
@@ -982,13 +1109,22 @@ class ReportRunnerTests(unittest.TestCase):
             output_path = Path(temp_dir)
             today = "2026-04-30"
             (output_path / f"seaborn_transactions_by_month_{today}.png").write_text("", encoding="utf-8")
+            (output_path / f"country_exposure_pie_SGD_{today}.png").write_text("", encoding="utf-8")
+            (output_path / f"country_exposure_pie_USD_{today}.png").write_text("", encoding="utf-8")
             (output_path / f"plotly_transactions_by_month_{today}.html").write_text("", encoding="utf-8")
 
             with patch("portfolio_tracker.report_runner.DEFAULT_OUTPUT_PATH", output_path):
                 chart_sets = get_generated_chart_sets(today)
 
             self.assertNotIn("matplotlib", chart_sets)
-            self.assertEqual(chart_sets["seaborn"], [f"seaborn_transactions_by_month_{today}.png"])
+            self.assertEqual(
+                chart_sets["seaborn"],
+                [
+                    f"seaborn_transactions_by_month_{today}.png",
+                    f"country_exposure_pie_SGD_{today}.png",
+                    f"country_exposure_pie_USD_{today}.png",
+                ],
+            )
             self.assertEqual(chart_sets["plotly"], [f"plotly_transactions_by_month_{today}.html"])
 
     def test_run_report_with_console_output_includes_captured_console_text(self) -> None:
@@ -1007,57 +1143,105 @@ class ReportRunnerTests(unittest.TestCase):
                 "stock_name": ["Acme Corp"],
             }
         )
-        positions = pd.DataFrame(columns=["stock_code", "stock_name"])
+        positions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp"],
+                "stock_code": ["ACME"],
+                "currency": ["USD"],
+                "market_value": [100.0],
+            }
+        )
 
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir)
-            with patch.object(report_runner, "DEFAULT_OUTPUT_PATH", output_path):
-                with patch.object(
-                    report_runner,
-                    "DEFAULT_STOCK_CODE_MAPPING_PATH",
-                    output_path / "data" / "stock_code_mapping.csv",
-                ):
-                    with patch.object(
+            matrix_path = output_path / "data" / "etf_country_matrix.csv"
+            matrix_path.parent.mkdir(parents=True)
+            pd.DataFrame(
+                {
+                    "ETF Name": ["Acme ETF"],
+                    "Stock Code": ["ACME"],
+                    "United States": [75.0],
+                    "Japan": [25.0],
+                }
+            ).to_csv(matrix_path, index=False)
+            with ExitStack() as stack:
+                stack.enter_context(patch.object(report_runner, "DEFAULT_OUTPUT_PATH", output_path))
+                stack.enter_context(
+                    patch.object(
+                        report_runner,
+                        "DEFAULT_STOCK_CODE_MAPPING_PATH",
+                        output_path / "data" / "stock_code_mapping.csv",
+                    )
+                )
+                stack.enter_context(
+                    patch.object(report_runner, "DEFAULT_ETF_COUNTRY_MATRIX_PATH", matrix_path)
+                )
+                stack.enter_context(
+                    patch.object(
                         report_runner,
                         "build_monthly_position_totals",
                         return_value=pd.DataFrame(),
-                    ):
-                        with patch.object(report_runner, "save_seaborn_monthly_position_chart"):
-                            with patch.object(report_runner, "save_plotly_monthly_position_chart"):
-                                with patch.object(
-                                    report_runner,
-                                    "build_monthly_transaction_totals",
-                                    return_value=pd.DataFrame(),
-                                ):
-                                    with patch.object(report_runner, "save_seaborn_monthly_transaction_chart"):
-                                        with patch.object(report_runner, "save_plotly_monthly_transaction_chart"):
-                                            with patch.object(
-                                                report_runner,
-                                                "load_stock_mapping",
-                                                return_value=pd.DataFrame(
-                                                    columns=["stock_name_key", "sector", "geography"]
-                                                ),
-                                            ):
-                                                with patch.object(
-                                                    report_runner,
-                                                    "enrich_positions_with_mapping",
-                                                    return_value=pd.DataFrame(),
-                                                ):
-                                                    with patch.object(
-                                                        report_runner,
-                                                        "save_seaborn_position_distribution_pie_chart",
-                                                    ):
-                                                        with patch.object(
-                                                            report_runner,
-                                                            "save_plotly_position_distribution_pie_chart",
-                                                        ):
-                                                            report_runner.save_report_outputs(
-                                                                [], [], transactions, positions
-                                                            )
+                    )
+                )
+                stack.enter_context(patch.object(report_runner, "save_seaborn_monthly_position_chart"))
+                stack.enter_context(patch.object(report_runner, "save_plotly_monthly_position_chart"))
+                stack.enter_context(
+                    patch.object(
+                        report_runner,
+                        "build_monthly_transaction_totals",
+                        return_value=pd.DataFrame(),
+                    )
+                )
+                stack.enter_context(patch.object(report_runner, "save_seaborn_monthly_transaction_chart"))
+                stack.enter_context(patch.object(report_runner, "save_plotly_monthly_transaction_chart"))
+                stack.enter_context(
+                    patch.object(
+                        report_runner,
+                        "load_stock_mapping",
+                        return_value=pd.DataFrame(
+                            columns=["stock_name_key", "sector", "geography"]
+                        ),
+                    )
+                )
+                stack.enter_context(
+                    patch.object(
+                        report_runner,
+                        "enrich_positions_with_mapping",
+                        return_value=pd.DataFrame(),
+                    )
+                )
+                stack.enter_context(
+                    patch.object(report_runner, "save_seaborn_position_distribution_pie_chart")
+                )
+                stack.enter_context(
+                    patch.object(report_runner, "save_plotly_position_distribution_pie_chart")
+                )
+                stack.enter_context(patch.object(report_runner, "save_country_exposure_pie_charts"))
+
+                report_runner.save_report_outputs([], [], transactions, positions)
 
             saved = pd.read_csv(output_path / "data" / "stock_code_mapping.csv")
             self.assertEqual(saved.loc[0, "stock_code"], "ACME")
             self.assertEqual(saved.loc[0, "stock_name"], "Acme Corp")
+            country_exposure = pd.read_csv(
+                output_path / f"country_exposure_{date.today().isoformat()}.csv"
+            )
+            self.assertEqual(country_exposure.loc[0, "United States"], 75.0)
+            self.assertEqual(country_exposure.loc[0, "Japan"], 25.0)
+            country_totals = pd.read_csv(
+                output_path / f"country_exposure_totals_{date.today().isoformat()}.csv"
+            )
+            self.assertEqual(
+                country_totals.to_dict("records"),
+                [
+                    {
+                        "currency": "USD",
+                        "country": "United States",
+                        "investment_value": 75.0,
+                    },
+                    {"currency": "USD", "country": "Japan", "investment_value": 25.0},
+                ],
+            )
 
 
 class ErrorMessageTests(unittest.TestCase):

@@ -40,6 +40,12 @@ function chartSortValue(chart) {
   if (chartName.includes("geography_distribution")) {
     return 4;
   }
+  if (chartName.includes("country_exposure_pie_sgd")) {
+    return 5;
+  }
+  if (chartName.includes("country_exposure_pie_usd")) {
+    return 6;
+  }
   return 99;
 }
 

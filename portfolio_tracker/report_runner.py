@@ -25,16 +25,24 @@ from .chart_helpers import (
 )
 from .constants import (
     DEFAULT_BROKER_ROOT_PATH,
+    DEFAULT_ETF_COUNTRY_MATRIX_PATH,
     DEFAULT_OUTPUT_PATH,
     DEFAULT_STOCK_CODE_MAPPING_PATH,
     DEFAULT_STOCK_MAPPING_PATH,
+)
+from .etf_country_exposure import (
+    build_country_exposure_dataframe,
+    build_country_exposure_totals_dataframe,
+    fill_missing_stock_codes_from_mapping,
+    load_etf_country_matrix,
+    save_country_exposure_pie_charts,
 )
 from .file_helpers import ensure_folder_exists, find_csv_files, find_workbooks
 from .interactive_brokers_parser import (
     parse_interactive_brokers_positions_folder,
     parse_interactive_brokers_transactions_folder,
 )
-from .output_helpers import save_dataframes_to_csv
+from .output_helpers import save_dataframe_to_csv, save_dataframes_to_csv
 from .poems_parser import parse_poems_workbooks
 from .stock_mapping import enrich_positions_with_mapping, load_stock_mapping
 from .stock_code_mapping import save_stock_code_mapping
@@ -150,11 +158,33 @@ def save_report_outputs(
 ) -> None:
     """Save report CSV files and chart images to the configured output folder."""
     save_dataframes_to_csv(transactions_df, positions_df, DEFAULT_OUTPUT_PATH)
-    save_stock_code_mapping(
+    stock_code_mapping_df = save_stock_code_mapping(
         transactions_df,
         positions_df,
         DEFAULT_STOCK_CODE_MAPPING_PATH,
     )
+    today = date.today().isoformat()
+    etf_country_matrix = load_etf_country_matrix(DEFAULT_ETF_COUNTRY_MATRIX_PATH)
+    country_positions_df = fill_missing_stock_codes_from_mapping(
+        positions_df, stock_code_mapping_df
+    )
+    country_exposure_df = build_country_exposure_dataframe(
+        country_positions_df, etf_country_matrix
+    )
+    save_dataframe_to_csv(
+        country_exposure_df,
+        DEFAULT_OUTPUT_PATH / f"country_exposure_{today}.csv",
+        "country exposure dataframe",
+    )
+    country_exposure_totals_df = build_country_exposure_totals_dataframe(
+        country_exposure_df
+    )
+    save_dataframe_to_csv(
+        country_exposure_totals_df,
+        DEFAULT_OUTPUT_PATH / f"country_exposure_totals_{today}.csv",
+        "country exposure totals dataframe",
+    )
+    save_country_exposure_pie_charts(country_exposure_totals_df, DEFAULT_OUTPUT_PATH)
     monthly_totals_df = build_monthly_position_totals(workbooks, csv_files)
     save_seaborn_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
     save_plotly_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
@@ -223,6 +253,8 @@ def get_generated_output_names(today: str) -> tuple[list[str], list[str]]:
     output_csv_names = [
         f"transactions_{today}.csv",
         f"positions_{today}.csv",
+        f"country_exposure_{today}.csv",
+        f"country_exposure_totals_{today}.csv",
     ]
 
     existing_csvs = [
@@ -241,6 +273,8 @@ def get_generated_chart_sets(today: str) -> dict[str, list[str]]:
         f"seaborn_transactions_by_month_{today}.png",
         f"seaborn_sector_distribution_{today}.png",
         f"seaborn_geography_distribution_{today}.png",
+        f"country_exposure_pie_SGD_{today}.png",
+        f"country_exposure_pie_USD_{today}.png",
     ]
     plotly_chart_names = [
         f"plotly_investment_positions_by_month_{today}.html",

@@ -14,6 +14,8 @@ The main script combines the broker data into:
 - `data/stock_code_mapping.csv`: a persisted mapping from stock code to latest stock
   name, with previous stock names retained when a broker reports a changed name
   for the same stock code
+- country exposure outputs derived from `data/etf_country_matrix.csv`, where
+  ETF country percentages are multiplied by current position market value
 
 The script also checks both dataframes for duplicate full-row records and prints a warning if duplicates are found.
 
@@ -33,6 +35,7 @@ Vibe Coding/
 |   +-- portfolio_tracker/
 |   +-- data/
 |   |   +-- stock_mapping.csv
+|   |   +-- etf_country_matrix.csv
 |   |   +-- stock_code_mapping.csv
 |   +-- docs/
 ```
@@ -49,6 +52,7 @@ Portfolio Tracker/
 |   +-- templates/                  # Flask templates
 +-- data/
 |   +-- stock_mapping.csv           # Editable sector/geography mapping
+|   +-- etf_country_matrix.csv      # Editable ETF country percentage matrix
 |   +-- stock_code_mapping.csv      # Generated local stock-code/name history
 +-- docs/
 |   +-- PYTHON_FILES.md             # Module reference
@@ -63,7 +67,11 @@ The parser writes generated files that should not be committed:
 
 - `../Output/transactions_YYYY-MM-DD.csv`
 - `../Output/positions_YYYY-MM-DD.csv`
+- `../Output/country_exposure_YYYY-MM-DD.csv`
+- `../Output/country_exposure_totals_YYYY-MM-DD.csv`
 - `../Output/seaborn_*.png` static chart files
+- `../Output/country_exposure_pie_SGD_YYYY-MM-DD.png`
+- `../Output/country_exposure_pie_USD_YYYY-MM-DD.png`
 - `../Output/plotly_*.html` interactive Plotly chart files
 - `data/stock_code_mapping.csv`
 
@@ -119,6 +127,31 @@ This file is separate from the generated `data/stock_code_mapping.csv`,
 which is produced automatically from broker reports and should be treated as
 parser output rather than a sector/geography classification file.
 
+### ETF Country Matrix
+
+The project includes `data/etf_country_matrix.csv`, which maps ETF stock codes
+to country percentage weights. The required identifier columns are:
+
+- `ETF Name`
+- `Stock Code`
+
+All remaining columns are treated as country percentage columns. During each
+report run, the parser matches current positions to this matrix by stock code,
+multiplies each country percentage by the position's `market_value`, and writes:
+
+- `country_exposure_YYYY-MM-DD.csv`: one row per position, with country columns
+  containing absolute exposure values
+- `country_exposure_totals_YYYY-MM-DD.csv`: country exposure summed by
+  `currency` and `country`
+- `country_exposure_pie_SGD_YYYY-MM-DD.png` and
+  `country_exposure_pie_USD_YYYY-MM-DD.png`: country exposure pie charts with
+  the top four countries shown separately and the remaining exposure grouped as
+  `Others`
+
+When a current position is missing a stock code, the workflow uses
+`data/stock_code_mapping.csv` to recover known codes from current or historical
+stock names before applying the ETF country matrix.
+
 ## Install Dependencies
 
 The script, web app, and tests require pandas, openpyxl, matplotlib, seaborn, plotly, and Flask.
@@ -148,6 +181,7 @@ Click `Run Report` to parse the broker files and view:
 - Loaded POEMS and Interactive Brokers files
 - Scrollable transaction and investment-position tables
 - Generated chart images
+- Country exposure pie charts for SGD and USD in the Seaborn chart view
 - Generated CSV output links
 - The same parser messages that previously printed only to the console
 
@@ -203,6 +237,10 @@ The script will print:
 - Seaborn PNG and Plotly HTML monthly investment-position line charts by broker and currency saved to `Output`
 - Seaborn PNG and Plotly HTML monthly transaction-amount line charts by broker and currency saved to `Output`
 - Seaborn PNG and Plotly HTML sector and geography investment-position pie charts by currency saved to `Output`; slices under 10% are grouped as `Others`
+- Country exposure CSV files saved to `Output`, including per-position country
+  exposure and currency/country totals
+- SGD and USD country exposure pie charts saved to `Output`; each chart shows
+  up to five slices, with the final slice grouped as `Others`
 - Chart titles, axes, ticks, legends, and pie percentages use role-specific font sizes for readability
 - Line and pie chart legends are placed on the right side of the plot area
 - A persistent `data/stock_code_mapping.csv` file saved with columns
@@ -226,10 +264,14 @@ Vibe Coding/
 +-- Output/
 |   +-- transactions_2026-04-28.csv
 |   +-- positions_2026-04-28.csv
+|   +-- country_exposure_2026-04-28.csv
+|   +-- country_exposure_totals_2026-04-28.csv
 |   +-- seaborn_investment_positions_by_month_2026-04-28.png
 |   +-- seaborn_transactions_by_month_2026-04-28.png
 |   +-- seaborn_sector_distribution_2026-04-28.png
 |   +-- seaborn_geography_distribution_2026-04-28.png
+|   +-- country_exposure_pie_SGD_2026-04-28.png
+|   +-- country_exposure_pie_USD_2026-04-28.png
 |   +-- plotly_investment_positions_by_month_2026-04-28.html
 |   +-- plotly_transactions_by_month_2026-04-28.html
 |   +-- plotly_sector_distribution_2026-04-28.html

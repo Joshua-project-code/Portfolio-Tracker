@@ -12,7 +12,9 @@ The main workflow is:
 2. Parse transactions and current positions into shared schemas.
 3. Print duplicate-row warnings and table previews.
 4. Save dated CSV files, Seaborn PNG charts, and Plotly HTML charts into the sibling `Output` folder.
-5. Maintain `data/stock_code_mapping.csv` as generated parser output and `data/stock_mapping.csv` as the editable sector/geography input.
+5. Generate country exposure CSVs and SGD/USD country exposure pie charts from
+   `data/etf_country_matrix.csv`.
+6. Maintain `data/stock_code_mapping.csv` as generated parser output and `data/stock_mapping.csv` as the editable sector/geography input.
 
 The Flask web app can also upload new POEMS workbook files and Interactive
 Brokers CSV files into those sibling folders, then re-run the parser workflow
@@ -69,6 +71,7 @@ python -m unittest discover -s tests -v
 - `portfolio_tracker/static/app.js`: Frontend upload, report, Seaborn/Plotly chart-library toggle, cleanup confirmation, delete-result handling, and rendering logic.
 - `portfolio_tracker/static/styles.css`: Web app styles, including the dashboard font stack, responsive layout, chart containers, and testing page styles.
 - `portfolio_tracker/constants.py`: Shared paths, extensions, and canonical output schemas.
+- `portfolio_tracker/etf_country_exposure.py`: Loads the ETF country matrix, builds per-position country exposure values, pivots country totals by currency, fills missing stock codes from saved code/name history, and saves SGD/USD country exposure pie charts.
 - `portfolio_tracker/file_helpers.py`: File discovery, folder creation, sheet lookup, column cleanup, and broker-name inference.
 - `portfolio_tracker/poems_parser.py`: POEMS Excel transaction and position parsing.
 - `portfolio_tracker/interactive_brokers_parser.py`: Interactive Brokers CSV section, transaction, and position parsing.
@@ -78,9 +81,10 @@ python -m unittest discover -s tests -v
 - `portfolio_tracker/output_helpers.py`: Writes dated CSV output files.
 - `portfolio_tracker/validation.py`: Prints duplicate full-row warnings.
 - `data/stock_mapping.csv`: User-editable stock-to-sector/geography mapping.
+- `data/etf_country_matrix.csv`: User-editable ETF country percentage matrix. Required identifier columns are `ETF Name` and `Stock Code`; all other columns are treated as country percentage columns.
 - `data/stock_code_mapping.csv`: Generated stock-code/name history from broker reports.
 - `tests/test_project.py`: Automated unittest coverage for parser helpers, broker parsers, report workflow helpers, output helpers, stock mapping, chart aggregation, validation output, and Flask routes.
-- `docs/testapp.md`: Test case catalogue with each test's description and expected observed output. It currently tracks 73 tests.
+- `docs/testapp.md`: Test case catalogue with each test's description and expected observed output. It currently tracks 78 tests.
 - `docs/PYTHON_FILES.md`: Python module reference.
 
 ## Data Contracts
@@ -119,6 +123,16 @@ Vibe Coding/
 
 Do not commit broker exports or generated outputs. `.gitignore` already excludes local broker folders, `Output`, generated `data/stock_code_mapping.csv`, Python caches, virtual environments, and Matplotlib cache files.
 
+Country exposure output files include:
+
+- `../Output/country_exposure_YYYY-MM-DD.csv`
+- `../Output/country_exposure_totals_YYYY-MM-DD.csv`
+- `../Output/country_exposure_pie_SGD_YYYY-MM-DD.png`
+- `../Output/country_exposure_pie_USD_YYYY-MM-DD.png`
+
+The country exposure pie charts show the top four countries by currency and
+aggregate the remaining countries into `Others`.
+
 ## Coding Guidelines
 
 - Prefer small, direct changes that follow the current module boundaries.
@@ -131,7 +145,9 @@ Do not commit broker exports or generated outputs. `.gitignore` already excludes
 - Preserve the shared transaction and position schemas unless the user explicitly asks to change output columns.
 - Use pandas operations for tabular parsing and transformation.
 - Keep broker-specific parsing inside the broker parser modules.
-- Keep chart generation inside `chart_helpers.py`.
+- Keep general chart generation inside `chart_helpers.py`; country exposure
+  chart generation currently lives with the country exposure transformation
+  logic in `etf_country_exposure.py`.
 - Preserve chart readability: use role-specific typography, avoid overlapping labels, and keep line and pie chart legends on the right side of the plot area unless the user asks for a different layout.
 - Keep filesystem path and discovery logic inside `file_helpers.py`.
 - Avoid broad refactors unless needed for the requested change.

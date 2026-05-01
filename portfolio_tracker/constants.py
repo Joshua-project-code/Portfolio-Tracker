@@ -16,6 +16,7 @@ DEFAULT_INTERACTIVE_BROKERS_PATH = DEFAULT_BROKER_ROOT_PATH / "Interactive Broke
 DEFAULT_OUTPUT_PATH = DEFAULT_ROOT_PATH.parent / "Output"
 DEFAULT_STOCK_MAPPING_PATH = DEFAULT_ROOT_PATH / "data" / "stock_mapping.csv"
 DEFAULT_STOCK_CODE_MAPPING_PATH = DEFAULT_ROOT_PATH / "data" / "stock_code_mapping.csv"
+DEFAULT_ETF_COUNTRY_MATRIX_PATH = DEFAULT_ROOT_PATH / "data" / "etf_country_matrix.csv"
 
 EXCEL_EXTENSIONS = {".xlsx", ".xlsm", ".xls"}
 CSV_EXTENSIONS = {".csv"}
