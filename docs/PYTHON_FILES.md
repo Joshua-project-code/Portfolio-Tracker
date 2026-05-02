@@ -9,7 +9,7 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `portfolio_tracker/parse_broker_reports.py` | Main command-line entry point. Parses CLI arguments, runs the shared report workflow, and shows user-friendly errors. |
 | `portfolio_tracker/report_runner.py` | Shared report workflow for the CLI and Flask app. Checks broker input folders, combines POEMS and Interactive Brokers dataframes, prints previews and duplicate warnings, saves CSV/chart outputs, and serializes full web table and chart-set response data. |
 | `portfolio_tracker/constants.py` | Defines shared paths, supported file extensions, and the standard transaction and position dataframe column schemas. |
-| `portfolio_tracker/etf_country_exposure.py` | Loads `data/etf_country_matrix.csv`, builds per-position country exposure values, pivots them into currency/country totals, fills missing stock codes from the generated stock-code mapping, and saves SGD/USD country exposure pie charts. |
+| `portfolio_tracker/etf_country_exposure.py` | Loads `data/etf_country_matrix.csv`, builds per-position country exposure values for ETFs and listed holdings, pivots them into currency/country totals, fills missing stock codes from the generated stock-code mapping, and saves SGD/USD country exposure pie charts. |
 | `portfolio_tracker/file_helpers.py` | Provides reusable file and spreadsheet helpers, including workbook and CSV discovery, Excel sheet lookup, column-name cleanup, and broker-name inference from folder paths. |
 | `portfolio_tracker/output_helpers.py` | Saves generated transaction and position dataframes to dated CSV files, using the report date when supplied and overwriting only matching filenames. |
 | `portfolio_tracker/chart_helpers.py` | Builds chart-ready summaries and saves Seaborn PNG and Plotly HTML monthly line charts and sector/geography pie charts, including role-specific typography, right-side legends, currency separation, and small-slice aggregation into `Others`. |
@@ -29,7 +29,9 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `portfolio_tracker/static/testing.js` | Frontend behavior for listing, running, and displaying application test results. |
 | `portfolio_tracker/static/styles.css` | Shared web app styling, including the dashboard font stack, layout, responsive tables, chart containers, and testing page styles. |
 | `data/stock_mapping.csv` | Editable stock-to-sector/geography mapping used for pie chart enrichment. |
-| `data/etf_country_matrix.csv` | Editable ETF country percentage matrix used to calculate absolute country exposure from position market values. |
-| `data/stock_code_mapping.csv` | Generated stock-code/name history created from broker reports. |
+| `data/etf_country_matrix.csv` | Editable country exposure percentage matrix for ETFs and individual listed holdings, used to calculate absolute country exposure from position market values. |
+| `data/stock_code_mapping.csv` | Persisted generated stock-code/name history created from broker reports. |
+| `docs/WEBAPP_USER_GUIDE.md` | Web app user guide covering Portfolio Tracker usage, country exposure maintenance, and Application Testing workflows. |
+| `docs/USER_STORIES.md` | Retrospective user stories, acceptance criteria, Mermaid workflow diagrams, and story-to-file traceability. |
 | `docs/testapp.md` | Test case catalogue consumed by the Application Testing page. |
 | `requirements.txt` | Python dependencies for running the app, parser, chart generation, and tests. |

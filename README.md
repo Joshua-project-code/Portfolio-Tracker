@@ -15,7 +15,8 @@ The main script combines the broker data into:
   name, with previous stock names retained when a broker reports a changed name
   for the same stock code
 - country exposure outputs derived from `data/etf_country_matrix.csv`, where
-  ETF country percentages are multiplied by current position market value
+  ETF and listed-holding country percentages are multiplied by current position
+  market value
 
 The script also checks both dataframes for duplicate full-row records and prints a warning if duplicates are found.
 
@@ -38,6 +39,10 @@ Vibe Coding/
 |   |   +-- etf_country_matrix.csv
 |   |   +-- stock_code_mapping.csv
 |   +-- docs/
+|   |   +-- WEBAPP_USER_GUIDE.md
+|   |   +-- USER_STORIES.md
+|   |   +-- PYTHON_FILES.md
+|   |   +-- testapp.md
 ```
 
 ## Project Structure
@@ -52,18 +57,21 @@ Portfolio Tracker/
 |   +-- templates/                  # Flask templates
 +-- data/
 |   +-- stock_mapping.csv           # Editable sector/geography mapping
-|   +-- etf_country_matrix.csv      # Editable ETF country percentage matrix
-|   +-- stock_code_mapping.csv      # Generated local stock-code/name history
+|   +-- etf_country_matrix.csv      # Editable country exposure percentage matrix
+|   +-- stock_code_mapping.csv      # Persisted generated stock-code/name history
 +-- docs/
 |   +-- PYTHON_FILES.md             # Module reference
 |   +-- testapp.md                  # Test case catalogue
+|   +-- WEBAPP_USER_GUIDE.md        # Web app and testing user guide
+|   +-- USER_STORIES.md             # User stories, diagrams, and traceability
 +-- tests/
 |   +-- test_project.py             # Automated test suite
 ```
 
 ## Generated Files
 
-The parser writes generated files that should not be committed:
+The parser writes dated generated files to the sibling `Output` folder. These
+report artifacts should not be committed:
 
 - `../Output/transactions_YYYY-MM-DD.csv`
 - `../Output/positions_YYYY-MM-DD.csv`
@@ -73,10 +81,11 @@ The parser writes generated files that should not be committed:
 - `../Output/country_exposure_pie_SGD_YYYY-MM-DD.png`
 - `../Output/country_exposure_pie_USD_YYYY-MM-DD.png`
 - `../Output/plotly_*.html` interactive Plotly chart files
-- `data/stock_code_mapping.csv`
 
-The committed editable mapping is `data/stock_mapping.csv`. It is separate from
-the generated `data/stock_code_mapping.csv`.
+The committed editable sector/geography mapping is `data/stock_mapping.csv`.
+The persisted generated stock-code/name history is `data/stock_code_mapping.csv`;
+it can be committed so future runs can recover known stock codes from current or
+historical broker names.
 
 ### POEMS Files
 
@@ -127,17 +136,20 @@ This file is separate from the generated `data/stock_code_mapping.csv`,
 which is produced automatically from broker reports and should be treated as
 parser output rather than a sector/geography classification file.
 
-### ETF Country Matrix
+### Country Exposure Matrix
 
-The project includes `data/etf_country_matrix.csv`, which maps ETF stock codes
-to country percentage weights. The required identifier columns are:
+The project includes `data/etf_country_matrix.csv`, which maps stock codes to
+country percentage weights for ETFs and individual listed holdings. The required
+identifier columns are:
 
 - `ETF Name`
 - `Stock Code`
 
-All remaining columns are treated as country percentage columns. During each
-report run, the parser matches current positions to this matrix by stock code,
-multiplies each country percentage by the position's `market_value`, and writes:
+The file keeps the legacy `ETF Name` column name, but it can contain any holding
+label. All remaining columns are treated as country percentage columns. During
+each report run, the parser matches current positions to this matrix by stock
+code, multiplies each country percentage by the position's `market_value`, and
+writes:
 
 - `country_exposure_YYYY-MM-DD.csv`: one row per position, with country columns
   containing absolute exposure values
@@ -151,6 +163,11 @@ multiplies each country percentage by the position's `market_value`, and writes:
 When a current position is missing a stock code, the workflow uses
 `data/stock_code_mapping.csv` to recover known codes from current or historical
 stock names before applying the ETF country matrix.
+
+For single-country holdings, enter `100.0` under the appropriate country. For
+example, a Singapore-listed REIT can be recorded as `100.0` under `Singapore`,
+while an ETF whose components are all listed in Hong Kong can be recorded as
+`100.0` under `Hong Kong`.
 
 ## Install Dependencies
 
@@ -218,6 +235,8 @@ the browser view:
 Click `Application Testing` at the bottom of the page to open the automated test page. The page lists
 the catalogued test cases from `docs/testapp.md`, lets you run each test
 individually, and includes a `Run All Tests` button with a pass-count summary.
+
+See `docs/WEBAPP_USER_GUIDE.md` for the full web app and testing workflow.
 
 ## Run The Parser From The Console
 
@@ -301,3 +320,15 @@ python -m unittest discover -s tests -v
 
 The `docs/testapp.md` file catalogues each automated test case, its description, and
 the expected observed output.
+
+## Documentation
+
+Additional project documentation is in the `docs` folder:
+
+- `docs/WEBAPP_USER_GUIDE.md`: web app usage, country exposure maintenance, and
+  application testing workflow
+- `docs/USER_STORIES.md`: retrospective user stories, acceptance criteria,
+  Mermaid diagrams, and story-to-file traceability
+- `docs/PYTHON_FILES.md`: Python module and related file reference
+- `docs/testapp.md`: automated test case catalogue consumed by the Application
+  Testing page
