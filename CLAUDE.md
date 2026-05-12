@@ -161,9 +161,12 @@ aggregate the remaining countries into `Others`.
 - Avoid broad refactors unless needed for the requested change.
 - Keep all Markdown documentation up to date when implementing changes,
   especially `README.md`, `docs/WEBAPP_USER_GUIDE.md`, `docs/USER_STORIES.md`,
-  `docs/PYTHON_FILES.md`, `docs/testapp.md`, and this `CLAUDE.md` guidance.
+  `docs/PYTHON_FILES.md`, `docs/testapp.md`, `docs/Run_time_df.md`, and this
+  `CLAUDE.md` guidance.
   If behavior, commands, dependencies, file structure, or user workflows change,
   update the relevant Markdown files in the same change.
+- Always update `docs/Run_time_df.md` when DataFrame creation points, DataFrame names,
+  DataFrame schemas, or DataFrame flow between modules changes.
 - After any change, review `docs/USER_STORIES.md` and update it when the change
   affects user goals, acceptance criteria, workflows, diagrams, or story-to-file
   traceability.
@@ -191,3 +194,4 @@ python -m portfolio_tracker.parse_broker_reports
 ```
 
 If broker files are not available locally, state that runtime verification could not be completed and describe what was checked instead.
+
