@@ -126,6 +126,7 @@ main {
 
 .status-row,
 .summary-grid,
+.performance-grid,
 .file-columns,
 .chart-grid,
 .link-row {
@@ -162,10 +163,30 @@ main {
   margin-bottom: 16px;
 }
 
+.performance-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 16px;
+}
+
+.performance-assumptions {
+  border-top: 1px solid var(--line);
+  padding: 12px 16px;
+}
+
+.performance-assumptions ol {
+  margin: 6px 0 0;
+  padding-left: 22px;
+}
+
+.performance-assumptions li {
+  margin-top: 4px;
+}
+
 .metric strong {
   display: block;
   font-size: 28px;
   margin-top: 6px;
+  white-space: pre-line;
 }
 
 .label,
@@ -267,10 +288,12 @@ main {
 .file-list {
   margin: 0;
   padding-left: 18px;
+  max-height: 9.5em;
+  overflow-y: auto;
 }
 
 .file-list li {
-  margin: 6px 0;
+  margin: 4px 0;
   overflow-wrap: anywhere;
 }
 
@@ -485,6 +508,7 @@ pre {
 
   .status-row,
   .summary-grid,
+  .performance-grid,
   .file-columns,
   .chart-grid {
     grid-template-columns: 1fr;

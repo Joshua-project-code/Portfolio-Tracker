@@ -61,6 +61,7 @@ The report produces:
 
 - input file counts and filenames
 - transaction and position counts
+- portfolio performance metrics
 - chart images and interactive charts
 - downloadable CSV links
 - transaction and investment-position tables
@@ -68,6 +69,26 @@ The report produces:
 
 Generated files are written to the sibling `Output` folder using the current
 date in the filename.
+
+### Review Portfolio Performance
+
+The `Portfolio Performance` section shows annualized IRR, simple return, and
+time-weighted return above the charts.
+
+The app keeps currencies separate because there is no FX conversion table in
+the project. Simple return is based on current position `market_value` versus
+observed and assumed invested capital. If the uploaded transaction files do not
+cover the current position cost basis, the app assumes an initial investment
+equal to the missing cost basis implied by current holdings, observed buys, and
+observed sells. The assumed date comes from the earliest available month-end
+position snapshot when that snapshot is the first evidence of the holding;
+otherwise it comes from the day before the first observed transaction. The web
+app lists the amount, date, and data basis below the metrics. If transaction
+history covers the current position cost basis, IRR and time-weighted return
+are calculated from reported data without adding an assumed starting
+investment. Time-weighted return uses chained Modified Dietz sub-period returns
+between available valuation snapshots, with exact transaction dates used to
+weight cash flows inside each sub-period.
 
 ### Review Charts
 

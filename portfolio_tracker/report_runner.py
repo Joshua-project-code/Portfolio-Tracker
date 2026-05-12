@@ -43,6 +43,7 @@ from .interactive_brokers_parser import (
     parse_interactive_brokers_transactions_folder,
 )
 from .output_helpers import save_dataframe_to_csv, save_dataframes_to_csv
+from .performance_metrics import calculate_portfolio_performance_metrics
 from .poems_parser import parse_poems_workbooks
 from .stock_mapping import enrich_positions_with_mapping, load_stock_mapping
 from .stock_code_mapping import save_stock_code_mapping
@@ -182,6 +183,7 @@ def save_report_outputs(
     csv_files: list[Path],
     transactions_df: pd.DataFrame,
     positions_df: pd.DataFrame,
+    monthly_position_totals_df: pd.DataFrame | None = None,
 ) -> None:
     """Save report CSV files and chart images to the configured output folder."""
     today = date.today().isoformat()
@@ -197,7 +199,7 @@ def save_report_outputs(
         DEFAULT_STOCK_CODE_MAPPING_PATH,
     )
     save_country_exposure_outputs(positions_df, stock_code_mapping_df, today)
-    save_monthly_charts(workbooks, csv_files, transactions_df)
+    save_monthly_charts(workbooks, csv_files, transactions_df, monthly_position_totals_df)
     save_position_distribution_charts(positions_df)
 
 
@@ -238,9 +240,14 @@ def save_monthly_charts(
     workbooks: list[Path],
     csv_files: list[Path],
     transactions_df: pd.DataFrame,
+    monthly_position_totals_df: pd.DataFrame | None = None,
 ) -> None:
     """Save monthly position and transaction charts."""
-    monthly_totals_df = build_monthly_position_totals(workbooks, csv_files)
+    monthly_totals_df = (
+        monthly_position_totals_df
+        if monthly_position_totals_df is not None
+        else build_monthly_position_totals(workbooks, csv_files)
+    )
     save_seaborn_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
     save_plotly_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
     monthly_transactions_df = build_monthly_transaction_totals(transactions_df)
@@ -363,11 +370,21 @@ def run_report(
 
     transactions_df, positions_df = build_dataframes(workbooks, interactive_brokers_path)
     print_report_preview(workbooks, csv_files, transactions_df, positions_df)
-    save_report_outputs(workbooks, csv_files, transactions_df, positions_df)
+    monthly_position_totals_df = build_monthly_position_totals(workbooks, csv_files)
+    save_report_outputs(
+        workbooks,
+        csv_files,
+        transactions_df,
+        positions_df,
+        monthly_position_totals_df,
+    )
 
     today = date.today().isoformat()
     chart_names, csv_names = get_generated_output_names(today)
     chart_sets = get_generated_chart_sets(today)
+    performance = calculate_portfolio_performance_metrics(
+        transactions_df, positions_df, monthly_position_totals_df
+    )
 
     return {
         "root_path": str(root_path),
@@ -380,6 +397,7 @@ def run_report(
         "charts": chart_names,
         "chart_sets": chart_sets,
         "csv_files": csv_names,
+        "performance": performance,
     }
 
 
@@ -392,3 +410,4 @@ def run_report_with_console_output(
         report = run_report(root_path=root_path, prompt_for_missing_files=False)
     report["console_output"] = output_buffer.getvalue()
     return report
+

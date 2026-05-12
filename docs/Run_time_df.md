@@ -20,6 +20,18 @@ This file lists DataFrames created during the Portfolio Tracker runtime workflow
 - `mapped_positions_df`: Positions enriched with `sector` and `geography`.
 - `table` (`dataframe_table`): Copy of input dataframe for JSON-safe serialization.
 
+## Portfolio performance metrics (`portfolio_tracker/performance_metrics.py`)
+
+- `daily_flows`: Normalized daily investor cash-flow dataframe by currency (`buy` as outflow, `sell` as inflow).
+- `return_flows`: Currency-specific cash-flow dataframe used for IRR/TWR, including an assumed initial outflow when transaction history is incomplete.
+- `assumption`: Per-currency inferred missing-history assumption built from cost basis, observed buy outflows, observed sell inflows, and available valuation/transaction dates.
+- `flows`: Currency-specific external cash-flow dataframe used by TWR with exact transaction dates.
+- `period_flows`: External cash flows that fall inside one valuation-to-valuation TWR sub-period.
+- `current_rows`: Month-aligned current portfolio values by currency.
+- `valuations`: Month-end valuation points by currency from available position snapshots.
+- `valuation_inputs`: Currency-specific valuation subset prepared for TWR.
+- `valuation_points`: Month-end valuation table used to estimate chained Modified Dietz TWR.
+
 ## POEMS parser (`portfolio_tracker/poems_parser.py`)
 
 - `raw`: Raw POEMS transaction worksheet.

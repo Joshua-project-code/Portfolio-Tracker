@@ -42,6 +42,7 @@ Vibe Coding/
 |   |   +-- WEBAPP_USER_GUIDE.md
 |   |   +-- USER_STORIES.md
 |   |   +-- PYTHON_FILES.md
+|   |   +-- Run_time_df.md
 |   |   +-- testapp.md
 ```
 
@@ -55,6 +56,7 @@ Portfolio Tracker/
 +-- portfolio_tracker/             # Application package
 |   +-- static/                     # Web JavaScript and CSS
 |   +-- templates/                  # Flask templates
+|   +-- performance_metrics.py      # Portfolio return calculations
 +-- data/
 |   +-- stock_mapping.csv           # Editable sector/geography mapping
 |   +-- etf_country_matrix.csv      # Editable country exposure percentage matrix
@@ -64,6 +66,7 @@ Portfolio Tracker/
 |   +-- testapp.md                  # Test case catalogue
 |   +-- WEBAPP_USER_GUIDE.md        # Web app and testing user guide
 |   +-- USER_STORIES.md             # User stories, diagrams, and traceability
+|   +-- Run_time_df.md              # Runtime DataFrame inventory
 +-- tests/
 |   +-- test_project.py             # Automated test suite
 ```
@@ -196,6 +199,8 @@ http://127.0.0.1:5000
 Click `Run Report` to parse the broker files and view:
 
 - Loaded POEMS and Interactive Brokers files
+- Annualized IRR, simple return, and time-weighted return metrics where the
+  available data supports them
 - Scrollable transaction and investment-position tables
 - Generated chart images
 - Country exposure pie charts for SGD and USD in the Seaborn chart view
@@ -207,6 +212,20 @@ generates both chart sets. The Seaborn view is shown by default, and the
 interactive Plotly view can be selected without re-running the report.
 Both chart types use dashboard-oriented typography with right-side legends so
 the plot area remains readable and legend text is not clipped.
+
+Performance metrics are calculated by currency because the project does not
+have FX conversion data. When transaction history is incomplete, the app assumes
+an initial investment equal to the missing cost basis needed to reconcile
+current holdings with observed buys and sells. The assumed date is inferred
+from the earliest available evidence: if a valuation snapshot is first, that
+month-end snapshot date is used; if a transaction is first, the day before that
+transaction is used. The Portfolio Performance section states the amount, date,
+and data used for the assumption.
+When transaction history covers the current position cost basis, IRR and
+time-weighted return are calculated from reported data without adding an
+assumed starting investment. Time-weighted return is approximated by chaining
+Modified Dietz sub-period returns between available valuation snapshots, using
+exact transaction dates to weight external cash flows inside each sub-period.
 
 The web tables format selected numeric columns to two decimal places and align
 numeric cells to the right for readability. This display formatting does not
@@ -330,5 +349,6 @@ Additional project documentation is in the `docs` folder:
 - `docs/USER_STORIES.md`: retrospective user stories, acceptance criteria,
   Mermaid diagrams, and story-to-file traceability
 - `docs/PYTHON_FILES.md`: Python module and related file reference
+- `docs/Run_time_df.md`: runtime DataFrame inventory
 - `docs/testapp.md`: automated test case catalogue consumed by the Application
   Testing page

@@ -17,6 +17,67 @@ let currentChartSets = {
 };
 let currentChartCacheKey = "";
 
+function formatPercentage(value) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) {
+    return "-";
+  }
+  return `${(numberValue * 100).toFixed(2)}%`;
+}
+
+function formatPerformanceMetric(performance, key) {
+  if (performance[key] !== null && performance[key] !== undefined) {
+    return formatPercentage(performance[key]);
+  }
+
+  const byCurrency = performance.by_currency || {};
+  const currencyEntries = Object.entries(byCurrency).filter(
+    ([, metrics]) => metrics[key] !== null && metrics[key] !== undefined
+  );
+  if (!currencyEntries.length) {
+    return "-";
+  }
+
+  return currencyEntries
+    .map(([currency, metrics]) => `${currency}: ${formatPercentage(metrics[key])}`)
+    .join("\n");
+}
+
+function renderPerformanceMetrics(performance = {}) {
+  document.querySelector("#annualized-irr").textContent = formatPerformanceMetric(
+    performance,
+    "annualized_irr"
+  );
+  document.querySelector("#simple-return").textContent = formatPerformanceMetric(
+    performance,
+    "simple_return"
+  );
+  document.querySelector("#time-weighted-return").textContent = formatPerformanceMetric(
+    performance,
+    "time_weighted_return"
+  );
+
+  const assumptions = performance.assumptions || [];
+  const assumptionPanel = document.querySelector("#performance-assumptions");
+  assumptionPanel.innerHTML = "";
+  if (!assumptions.length) {
+    assumptionPanel.textContent =
+      "Assumptions: none. IRR and TWR use the reported transaction history.";
+    return;
+  }
+
+  const heading = document.createElement("span");
+  heading.textContent = "Assumptions:";
+  const list = document.createElement("ol");
+  assumptions.forEach((assumption) => {
+    const item = document.createElement("li");
+    item.textContent = assumption;
+    list.appendChild(item);
+  });
+
+  assumptionPanel.append(heading, list);
+}
+
 function outputUrl(file, cacheKey = "") {
   const query = cacheKey ? `?v=${encodeURIComponent(cacheKey)}` : "";
   return `/outputs/${encodeURIComponent(file)}${query}`;
@@ -249,6 +310,7 @@ function clearScreen() {
   document.querySelector("#ib-count").textContent = "0";
   document.querySelector("#transaction-count").textContent = "0";
   document.querySelector("#position-count").textContent = "0";
+  renderPerformanceMetrics();
 
   renderFileList("#poems-files", []);
   renderFileList("#ib-files", []);
@@ -317,6 +379,7 @@ async function runReport() {
     document.querySelector("#ib-count").textContent = data.interactive_brokers_files.length;
     document.querySelector("#transaction-count").textContent = data.transactions.total_rows;
     document.querySelector("#position-count").textContent = data.positions.total_rows;
+    renderPerformanceMetrics(data.performance || {});
 
     renderFileList("#poems-files", data.poems_files);
     renderFileList("#ib-files", data.interactive_brokers_files);

@@ -80,6 +80,14 @@ Acceptance criteria:
 - The web app can toggle between Seaborn and Plotly chart sets without rerunning
   the report.
 - Chart legends and labels are readable in the web app.
+- The dashboard shows annualized IRR, simple return, and time-weighted return
+  above the charts where the available data supports those calculations.
+- Return metrics are kept currency-specific unless FX conversion data is added.
+- When transaction history is incomplete, the dashboard states the assumed
+  initial investment used to calculate IRR and time-weighted return.
+- When transaction history covers the current position cost basis, IRR and
+  time-weighted return are calculated without adding an assumed starting
+  investment.
 
 ## Country Exposure Stories
 
@@ -304,7 +312,7 @@ sequenceDiagram
 | US-002 | `portfolio_tracker/report_runner.py`, `portfolio_tracker/web.py` |
 | US-003 | `portfolio_tracker/report_runner.py`, `portfolio_tracker/static/app.js` |
 | US-004 | `portfolio_tracker/output_helpers.py`, `portfolio_tracker/web.py` |
-| US-005 | `portfolio_tracker/chart_helpers.py`, `portfolio_tracker/report_runner.py` |
+| US-005 | `portfolio_tracker/chart_helpers.py`, `portfolio_tracker/report_runner.py`, `portfolio_tracker/performance_metrics.py` |
 | US-006 | `portfolio_tracker/etf_country_exposure.py`, `data/etf_country_matrix.csv` |
 | US-007 | `data/etf_country_matrix.csv`, `portfolio_tracker/etf_country_exposure.py` |
 | US-008 | `data/etf_country_matrix.csv`, `portfolio_tracker/etf_country_exposure.py` |

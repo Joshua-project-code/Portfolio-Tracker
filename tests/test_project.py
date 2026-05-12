@@ -51,6 +51,10 @@ from portfolio_tracker.interactive_brokers_parser import (
 )
 from portfolio_tracker.output_helpers import save_dataframe_to_csv, save_dataframes_to_csv
 from portfolio_tracker.parse_broker_reports import get_user_friendly_error_message
+from portfolio_tracker.performance_metrics import (
+    calculate_portfolio_performance_metrics,
+    calculate_time_weighted_return,
+)
 from portfolio_tracker.poems_parser import (
     add_stock_codes_to_positions,
     parse_poems_positions,
@@ -1108,6 +1112,141 @@ class ReportRunnerTests(unittest.TestCase):
         self.assertEqual(transactions["broker"].tolist(), ["ib", "poems"])
         self.assertEqual(positions["broker"].tolist(), ["ib", "poems"])
 
+    def test_calculate_portfolio_performance_metrics_returns_expected_simple_and_irr(self) -> None:
+        transactions = pd.DataFrame(
+            {
+                "transaction_date": [
+                    pd.Timestamp("2025-01-01"),
+                    pd.Timestamp("2025-06-01"),
+                ],
+                "transaction_amount": [1000.0, 200.0],
+                "price_currency": ["USD", "USD"],
+                "transaction_type": ["buy", "sell"],
+            }
+        )
+        positions = pd.DataFrame({"currency": ["USD"], "market_value": [900.0]})
+        monthly_position_totals = pd.DataFrame(
+            {
+                "month": [pd.Timestamp("2025-01-01"), pd.Timestamp("2025-06-01")],
+                "series": ["broker - USD", "broker - USD"],
+                "market_value": [1100.0, 900.0],
+            }
+        )
+
+        metrics = calculate_portfolio_performance_metrics(
+            transactions, positions, monthly_position_totals
+        )
+
+        self.assertIn("annualized_irr", metrics)
+        self.assertIn("simple_return", metrics)
+        self.assertIn("time_weighted_return", metrics)
+        self.assertAlmostEqual(metrics["simple_return"], 0.1)
+        self.assertIsNotNone(metrics["annualized_irr"])
+        self.assertIsNotNone(metrics["time_weighted_return"])
+        self.assertEqual(metrics["assumptions"], [])
+
+    def test_calculate_portfolio_performance_metrics_keeps_currencies_separate(self) -> None:
+        transactions = pd.DataFrame(
+            {
+                "transaction_date": [
+                    pd.Timestamp("2025-01-01"),
+                    pd.Timestamp("2025-01-01"),
+                ],
+                "transaction_amount": [1000.0, 1000.0],
+                "price_currency": ["USD", "SGD"],
+                "transaction_type": ["buy", "buy"],
+            }
+        )
+        positions = pd.DataFrame(
+            {
+                "currency": ["USD", "SGD"],
+                "market_value": [1100.0, 900.0],
+            }
+        )
+
+        metrics = calculate_portfolio_performance_metrics(transactions, positions)
+
+        self.assertIsNone(metrics["simple_return"])
+        self.assertEqual(
+            set(metrics["by_currency"]),
+            {"USD", "SGD"},
+        )
+        self.assertAlmostEqual(metrics["by_currency"]["USD"]["simple_return"], 0.1)
+        self.assertAlmostEqual(metrics["by_currency"]["SGD"]["simple_return"], -0.1)
+
+    def test_calculate_portfolio_performance_metrics_uses_assumptions_for_incomplete_history(self) -> None:
+        transactions = pd.DataFrame(
+            {
+                "transaction_date": [pd.Timestamp("2025-06-01")],
+                "transaction_amount": [100.0],
+                "price_currency": ["USD"],
+                "transaction_type": ["buy"],
+            }
+        )
+        positions = pd.DataFrame(
+            {
+                "currency": ["USD"],
+                "market_value": [1200.0],
+                "total_cost": [1000.0],
+            }
+        )
+        monthly_position_totals = pd.DataFrame(
+            {
+                "month": [pd.Timestamp("2025-01-01")],
+                "series": ["broker - USD"],
+                "market_value": [1100.0],
+            }
+        )
+
+        metrics = calculate_portfolio_performance_metrics(
+            transactions, positions, monthly_position_totals
+        )
+
+        self.assertAlmostEqual(metrics["simple_return"], 0.2)
+        self.assertIsNotNone(metrics["annualized_irr"])
+        self.assertIsNotNone(metrics["time_weighted_return"])
+        self.assertEqual(metrics["by_currency"]["USD"]["data_basis"], "assumption")
+        self.assertIn("assumed an initial USD 900.00 investment", metrics["assumptions"][0])
+        self.assertIn("2025-01-31", metrics["assumptions"][0])
+        self.assertIn("earliest available month-end position snapshot", metrics["assumptions"][0])
+
+    def test_calculate_time_weighted_return_uses_date_weighted_external_flows(self) -> None:
+        flows = pd.DataFrame(
+            {
+                "transaction_date": [pd.Timestamp("2025-02-15")],
+                "currency": ["USD"],
+                "cash_flow": [-100.0],
+            }
+        )
+        valuations = pd.DataFrame(
+            {
+                "month": [pd.Timestamp("2025-01-31"), pd.Timestamp("2025-02-28")],
+                "currency": ["USD", "USD"],
+                "ending_value": [1000.0, 1200.0],
+            }
+        )
+
+        twr = calculate_time_weighted_return(flows, valuations)
+
+        self.assertAlmostEqual(twr, 100 / (1000 + 100 * 13 / 28))
+
+    def test_calculate_portfolio_performance_metrics_handles_empty_inputs(self) -> None:
+        metrics = calculate_portfolio_performance_metrics(
+            pd.DataFrame(columns=TRANSACTION_COLUMNS),
+            pd.DataFrame(columns=POSITION_COLUMNS),
+        )
+
+        self.assertEqual(
+            metrics,
+            {
+                "annualized_irr": None,
+                "simple_return": None,
+                "time_weighted_return": None,
+                "assumptions": [],
+                "by_currency": {},
+            },
+        )
+
     def test_dataframe_table_serializes_nan_timestamps_and_numpy_scalars(self) -> None:
         table = dataframe_table(
             pd.DataFrame(
@@ -1168,7 +1307,18 @@ class ReportRunnerTests(unittest.TestCase):
             self.assertEqual(chart_sets["plotly"], [f"plotly_transactions_by_month_{today}.html"])
 
     def test_run_report_with_console_output_includes_captured_console_text(self) -> None:
-        with patch("portfolio_tracker.report_runner.run_report", return_value={"ok": True}) as run_report:
+        with patch(
+            "portfolio_tracker.report_runner.run_report",
+            return_value={
+                "ok": True,
+                "performance": {
+                    "annualized_irr": None,
+                    "simple_return": None,
+                    "time_weighted_return": None,
+                    "assumptions": [],
+                },
+            },
+        ) as run_report:
             report = run_report_with_console_output(Path("root"))
 
         self.assertEqual(report["console_output"], "")

@@ -68,6 +68,7 @@ python -m unittest discover -s tests -v
 - `portfolio_tracker/web.py`: Flask web server for the Portfolio Tracker UI, Application Testing page, upload API, report API, cleanup APIs, static asset versioning, and test APIs.
 - `portfolio_tracker/parse_broker_reports.py`: Main CLI entry point and user-friendly error handling.
 - `portfolio_tracker/report_runner.py`: Shared report workflow used by the CLI and web app, including broker file discovery, dataframe construction, console preview output, CSV/chart generation, chart-set response serialization, and web table serialization.
+- `portfolio_tracker/performance_metrics.py`: Portfolio performance calculations, including cash-flow normalization, dynamic incomplete-history assumptions, annualized IRR, simple return, and chained Modified Dietz TWR by currency.
 - `portfolio_tracker/templates/index.html`: Main web app page rendered by Flask.
 - `portfolio_tracker/templates/application_testing.html`: Application Testing page rendered by Flask.
 - `portfolio_tracker/static/app.js`: Frontend upload, report, Seaborn/Plotly chart-library toggle, cleanup confirmation, delete-result handling, and rendering logic.
@@ -87,7 +88,7 @@ python -m unittest discover -s tests -v
 - `data/etf_country_matrix.csv`: User-editable country exposure percentage matrix for ETFs and individual listed holdings. Required identifier columns are `ETF Name` and `Stock Code`; all other columns are treated as country percentage columns.
 - `data/stock_code_mapping.csv`: Persisted generated stock-code/name history from broker reports. This file can be committed so future runs can recover known stock codes from current or historical broker names.
 - `tests/test_project.py`: Automated unittest coverage for parser helpers, broker parsers, report workflow helpers, output helpers, stock mapping, chart aggregation, validation output, and Flask routes.
-- `docs/testapp.md`: Test case catalogue with each test's description and expected observed output. It currently tracks 80 tests.
+- `docs/testapp.md`: Test case catalogue with each test's description and expected observed output. It currently tracks 85 tests.
 - `docs/WEBAPP_USER_GUIDE.md`: Web app user guide covering Portfolio Tracker usage, country exposure maintenance, and Application Testing workflows.
 - `docs/USER_STORIES.md`: Retrospective user stories, acceptance criteria, Mermaid workflow diagrams, and story-to-file traceability.
 - `docs/PYTHON_FILES.md`: Python module reference.
