@@ -39,6 +39,8 @@ Acceptance criteria:
 
 - The web app runs the shared parser workflow without requiring new uploads.
 - The dashboard shows loaded broker filenames and record counts.
+- Long broker filename lists are capped visually and can be scrolled when more
+  than about five files are loaded.
 - The web app shows user-friendly errors if report generation fails.
 
 ### US-003 Review Transaction And Position Tables
@@ -85,6 +87,8 @@ Acceptance criteria:
 - Return metrics are kept currency-specific unless FX conversion data is added.
 - When transaction history is incomplete, the dashboard states the assumed
   initial investment used to calculate IRR and time-weighted return.
+- Performance assumptions are displayed as a numbered list, one assumption per
+  line.
 - When transaction history covers the current position cost basis, IRR and
   time-weighted return are calculated without adding an assumed starting
   investment.
@@ -255,12 +259,14 @@ flowchart TD
     G --> H[Update stock code mapping]
     H --> I[Apply sector and geography mapping]
     H --> J[Apply country exposure matrix]
+    G --> O[Calculate IRR, simple return, TWR, and assumptions]
     I --> K[Generate distribution charts]
     J --> L[Generate country exposure CSVs and pie charts]
     G --> M[Generate transaction and position CSVs]
     K --> N[Render dashboard results]
     L --> N
     M --> N
+    O --> N
 ```
 
 ## Country Exposure Flow Diagram

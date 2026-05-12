@@ -70,6 +70,9 @@ The report produces:
 Generated files are written to the sibling `Output` folder using the current
 date in the filename.
 
+The Input Files section keeps each broker file list to about five visible rows.
+If more files are loaded, scroll inside the list to see the rest.
+
 ### Review Portfolio Performance
 
 The `Portfolio Performance` section shows annualized IRR, simple return, and
@@ -89,6 +92,12 @@ are calculated from reported data without adding an assumed starting
 investment. Time-weighted return uses chained Modified Dietz sub-period returns
 between available valuation snapshots, with exact transaction dates used to
 weight cash flows inside each sub-period.
+
+Assumptions are displayed as a numbered list:
+
+1. Each currency with incomplete transaction history gets its own assumption.
+2. The assumption text states the inferred amount, date, cost basis, observed
+   buys, observed sells, and date source.
 
 ### Review Charts
 

@@ -207,6 +207,10 @@ Click `Run Report` to parse the broker files and view:
 - Generated CSV output links
 - The same parser messages that previously printed only to the console
 
+The Input Files section shows loaded broker filenames in a capped list. When
+more than about five files are loaded for a broker, the list scrolls so the rest
+of the dashboard remains compact.
+
 The Charts section includes a `Seaborn` / `Plotly` toggle. Each report run
 generates both chart sets. The Seaborn view is shown by default, and the
 interactive Plotly view can be selected without re-running the report.
@@ -219,8 +223,8 @@ an initial investment equal to the missing cost basis needed to reconcile
 current holdings with observed buys and sells. The assumed date is inferred
 from the earliest available evidence: if a valuation snapshot is first, that
 month-end snapshot date is used; if a transaction is first, the day before that
-transaction is used. The Portfolio Performance section states the amount, date,
-and data used for the assumption.
+transaction is used. The Portfolio Performance section states each assumption
+as a numbered point with the amount, date, and data used for the assumption.
 When transaction history covers the current position cost basis, IRR and
 time-weighted return are calculated from reported data without adding an
 assumed starting investment. Time-weighted return is approximated by chaining

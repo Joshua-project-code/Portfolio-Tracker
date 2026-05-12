@@ -5,6 +5,7 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | File | Purpose |
 | --- | --- |
 | `app.py` | Project-root Flask launcher that imports `portfolio_tracker.web`. |
+| `portfolio_tracker/__init__.py` | Package marker for the Portfolio Tracker application modules. |
 | `portfolio_tracker/web.py` | Flask web server. Serves the Portfolio Tracker UI and Application Testing page, handles broker file uploads, cleanup requests, report runs, automated tests, static asset versioning, and generated output files. |
 | `portfolio_tracker/parse_broker_reports.py` | Main command-line entry point. Parses CLI arguments, runs the shared report workflow, and shows user-friendly errors. |
 | `portfolio_tracker/report_runner.py` | Shared report workflow for the CLI and Flask app. Checks broker input folders, combines POEMS and Interactive Brokers dataframes, prints previews and duplicate warnings, saves CSV/chart outputs, and serializes full web table and chart-set response data. |
@@ -24,6 +25,8 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 
 | File | Purpose |
 | --- | --- |
+| `README.md` | Main project setup, run, output, web app, parser, testing, and documentation guide. |
+| `CLAUDE.md` | Maintenance guidance for future coding-agent sessions in this repository. |
 | `portfolio_tracker/templates/index.html` | Main Portfolio Tracker web page. |
 | `portfolio_tracker/templates/application_testing.html` | Application Testing web page. |
 | `portfolio_tracker/static/app.js` | Frontend behavior for upload, report execution, Seaborn/Plotly chart-library toggling, cleanup confirmations, delete-result UI updates, charts including country exposure pies, CSV links, and tables. |
@@ -34,5 +37,7 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `data/stock_code_mapping.csv` | Persisted generated stock-code/name history created from broker reports. |
 | `docs/WEBAPP_USER_GUIDE.md` | Web app user guide covering Portfolio Tracker usage, country exposure maintenance, and Application Testing workflows. |
 | `docs/USER_STORIES.md` | Retrospective user stories, acceptance criteria, Mermaid workflow diagrams, and story-to-file traceability. |
+| `docs/PYTHON_FILES.md` | Python module and related-file reference. |
+| `docs/Run_time_df.md` | Runtime DataFrame inventory by module and workflow stage. |
 | `docs/testapp.md` | Test case catalogue consumed by the Application Testing page. |
 | `requirements.txt` | Python dependencies for running the app, parser, chart generation, and tests. |

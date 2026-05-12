@@ -10,6 +10,7 @@ This file lists DataFrames created during the Portfolio Tracker runtime workflow
 - `ib_positions_df`: Interactive Brokers latest positions snapshot.
 - `transactions_df`: Combined POEMS + IB transactions, sorted by `transaction_date`.
 - `positions_df`: Combined POEMS + IB positions, sorted by `market_value`.
+- `monthly_position_totals_df`: Monthly position totals built once per report run and reused for chart generation and performance metrics.
 - `stock_code_mapping_df`: Persisted/returned stock code mapping dataframe.
 - `country_positions_df`: Positions after filling missing stock codes from mapping.
 - `country_exposure_df`: Per-position country exposure values.
@@ -23,13 +24,17 @@ This file lists DataFrames created during the Portfolio Tracker runtime workflow
 ## Portfolio performance metrics (`portfolio_tracker/performance_metrics.py`)
 
 - `daily_flows`: Normalized daily investor cash-flow dataframe by currency (`buy` as outflow, `sell` as inflow).
+- `positions`: Positions copy with normalized currency values and numeric `market_value` / `total_cost` fields.
+- `ending_values`: Current market value totals by currency.
+- `cost_basis_values`: Current total-cost basis by currency.
+- `currency_flows`: Currency-specific subset of normalized investor cash flows.
+- `currency_valuations`: Currency-specific subset of valuation points used for assumptions and TWR.
 - `return_flows`: Currency-specific cash-flow dataframe used for IRR/TWR, including an assumed initial outflow when transaction history is incomplete.
 - `assumption`: Per-currency inferred missing-history assumption built from cost basis, observed buy outflows, observed sell inflows, and available valuation/transaction dates.
 - `flows`: Currency-specific external cash-flow dataframe used by TWR with exact transaction dates.
 - `period_flows`: External cash flows that fall inside one valuation-to-valuation TWR sub-period.
 - `current_rows`: Month-aligned current portfolio values by currency.
 - `valuations`: Month-end valuation points by currency from available position snapshots.
-- `valuation_inputs`: Currency-specific valuation subset prepared for TWR.
 - `valuation_points`: Month-end valuation table used to estimate chained Modified Dietz TWR.
 
 ## POEMS parser (`portfolio_tracker/poems_parser.py`)

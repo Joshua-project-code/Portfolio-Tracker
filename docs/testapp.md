@@ -6,7 +6,7 @@ Run all tests from the project folder with:
 python -m unittest discover -s tests -v
 ```
 
-The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 80 catalogued test cases.
+The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 85 catalogued test cases.
 
 Keep this catalogue synchronized with `tests/test_project.py`. Whenever a test
 is added, removed, renamed, or materially changed, update the matching catalogue
