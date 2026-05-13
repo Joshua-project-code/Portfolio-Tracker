@@ -16,6 +16,10 @@ let currentChartSets = {
   plotly: [],
 };
 let currentChartCacheKey = "";
+let holdingPerformanceSort = {
+  column: "annualized_irr",
+  direction: "desc",
+};
 
 function formatPercentage(value) {
   const numberValue = Number(value);
@@ -56,6 +60,10 @@ function renderPerformanceMetrics(performance = {}) {
     performance,
     "time_weighted_return"
   );
+  document.querySelector("#cagr").textContent = formatPerformanceMetric(
+    performance,
+    "cagr"
+  );
 
   const assumptions = performance.assumptions || [];
   const assumptionPanel = document.querySelector("#performance-assumptions");
@@ -76,6 +84,105 @@ function renderPerformanceMetrics(performance = {}) {
   });
 
   assumptionPanel.append(heading, list);
+}
+
+function getHoldingSortValue(row, column) {
+  if (
+    column === "annualized_irr"
+    || column === "cagr"
+    || column === "simple_return"
+    || column === "time_weighted_return"
+  ) {
+    const metricValue = Number(row[column]);
+    return Number.isFinite(metricValue) ? metricValue : Number.NEGATIVE_INFINITY;
+  }
+  return String(row[column] || "").toUpperCase();
+}
+
+function holdingPerformanceColumns() {
+  return [
+    { key: "stock_code", label: "Stock Code" },
+    { key: "stock_name", label: "Stock Name" },
+    { key: "currency", label: "Currency" },
+    { key: "annualized_irr", label: "Annualized IRR" },
+    { key: "simple_return", label: "Simple Return" },
+    { key: "time_weighted_return", label: "Time-Weighted Return" },
+    { key: "cagr", label: "CAGR" },
+    { key: "assumption_note", label: "Assumptions" },
+  ];
+}
+
+function renderHoldingPerformanceTable(rows = []) {
+  const container = document.querySelector("#holding-performance-table");
+  const caption = document.querySelector("#holding-performance-caption");
+  container.innerHTML = "";
+  caption.textContent = "";
+  if (!rows.length) {
+    container.textContent = "No holdings to display.";
+    container.className = "table-wrap muted";
+    return;
+  }
+
+  container.className = "table-wrap";
+  const columns = holdingPerformanceColumns();
+  const sortedRows = [...rows].sort((left, right) => {
+    const leftValue = getHoldingSortValue(left, holdingPerformanceSort.column);
+    const rightValue = getHoldingSortValue(right, holdingPerformanceSort.column);
+    if (leftValue < rightValue) {
+      return holdingPerformanceSort.direction === "asc" ? -1 : 1;
+    }
+    if (leftValue > rightValue) {
+      return holdingPerformanceSort.direction === "asc" ? 1 : -1;
+    }
+    return 0;
+  });
+
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  const tbody = document.createElement("tbody");
+  const headRow = document.createElement("tr");
+  columns.forEach((column) => {
+    const heading = document.createElement("th");
+    heading.classList.add("sortable-header");
+    const isCurrentSort = holdingPerformanceSort.column === column.key;
+    const sortSuffix = isCurrentSort ? (holdingPerformanceSort.direction === "asc" ? " \u2191" : " \u2193") : "";
+    heading.textContent = `${column.label}${sortSuffix}`;
+    heading.addEventListener("click", () => {
+      if (holdingPerformanceSort.column === column.key) {
+        holdingPerformanceSort.direction = holdingPerformanceSort.direction === "asc" ? "desc" : "asc";
+      } else {
+        holdingPerformanceSort.column = column.key;
+        holdingPerformanceSort.direction = column.key === "stock_code" || column.key === "stock_name" ? "asc" : "desc";
+      }
+      renderHoldingPerformanceTable(rows);
+    });
+    headRow.appendChild(heading);
+  });
+  thead.appendChild(headRow);
+
+  sortedRows.forEach((row) => {
+    const bodyRow = document.createElement("tr");
+    columns.forEach((column) => {
+      const cell = document.createElement("td");
+      if (
+        column.key === "annualized_irr"
+        || column.key === "cagr"
+        || column.key === "simple_return"
+        || column.key === "time_weighted_return"
+      ) {
+        cell.className = "center-cell";
+        cell.textContent = formatPercentage(row[column.key]);
+      } else {
+        cell.textContent = row[column.key] || "-";
+      }
+      bodyRow.appendChild(cell);
+    });
+    tbody.appendChild(bodyRow);
+  });
+
+  table.append(thead, tbody);
+  container.appendChild(table);
+  caption.textContent = `Showing ${rows.length} holding(s)`;
 }
 
 function outputUrl(file, cacheKey = "") {
@@ -323,6 +430,7 @@ function clearScreen() {
   renderLinks("#csv-links", []);
   renderTable("#transactions-table", { columns: [], rows: [], total_rows: 0 });
   renderTable("#positions-table", { columns: [], rows: [], total_rows: 0 });
+  renderHoldingPerformanceTable([]);
 
   document.querySelector("#transaction-caption").textContent = "";
   document.querySelector("#position-caption").textContent = "";
@@ -380,6 +488,7 @@ async function runReport() {
     document.querySelector("#transaction-count").textContent = data.transactions.total_rows;
     document.querySelector("#position-count").textContent = data.positions.total_rows;
     renderPerformanceMetrics(data.performance || {});
+    renderHoldingPerformanceTable((data.performance || {}).by_holding || []);
 
     renderFileList("#poems-files", data.poems_files);
     renderFileList("#ib-files", data.interactive_brokers_files);

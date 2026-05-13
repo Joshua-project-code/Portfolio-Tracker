@@ -164,7 +164,7 @@ main {
 }
 
 .performance-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   padding: 16px;
 }
 
@@ -248,6 +248,15 @@ main {
 .panel-heading h2 {
   font-size: 18px;
   margin: 0;
+}
+
+.panel-heading h3 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.performance-holdings-heading {
+  border-top: 1px solid var(--line);
 }
 
 .chart-toggle {
@@ -463,6 +472,11 @@ th {
   z-index: 1;
 }
 
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+}
+
 td {
   font-size: 14px;
 }
@@ -470,6 +484,11 @@ td {
 .numeric-cell {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.center-cell {
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 pre {

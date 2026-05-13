@@ -160,10 +160,12 @@ def calculate_portfolio_performance_metrics(
     """Calculate IRR, simple return, and TWR without blending unlike currencies."""
     empty_metrics = {
         "annualized_irr": None,
+        "cagr": None,
         "simple_return": None,
         "time_weighted_return": None,
         "assumptions": [],
         "by_currency": {},
+        "by_holding": [],
     }
     if transactions_df.empty and positions_df.empty:
         return empty_metrics
@@ -224,6 +226,13 @@ def calculate_portfolio_performance_metrics(
                 (ending_value + total_inflows - adjusted_outflows)
                 / adjusted_outflows
             )
+        cagr = calculate_cagr(
+            adjusted_outflows=adjusted_outflows,
+            ending_value=ending_value,
+            total_inflows=total_inflows,
+            flows_df=currency_flows,
+            assumed_start_date=assumption["date"] if assumed_initial_outflow > 0 else None,
+        )
 
         assumptions: list[str] = []
         return_flows = currency_flows.copy()
@@ -260,6 +269,7 @@ def calculate_portfolio_performance_metrics(
 
         by_currency[currency] = {
             "annualized_irr": irr_annualized,
+            "cagr": cagr,
             "simple_return": simple_return,
             "time_weighted_return": time_weighted_return,
             "data_basis": "assumption" if assumed_initial_outflow > 0 else "reported",
@@ -274,11 +284,174 @@ def calculate_portfolio_performance_metrics(
     metrics = empty_metrics | {
         "assumptions": all_assumptions,
         "by_currency": by_currency,
+        "by_holding": calculate_holding_performance_metrics(
+            transactions_df,
+            positions_df,
+        ),
     }
     if len(by_currency) == 1:
         only_metrics = next(iter(by_currency.values()))
         metrics.update(only_metrics)
     return metrics
+
+
+def calculate_holding_performance_metrics(
+    transactions_df: pd.DataFrame,
+    positions_df: pd.DataFrame,
+) -> list[dict[str, object]]:
+    """Calculate per-holding IRR, simple return, and TWR for current positions."""
+    if positions_df.empty:
+        return []
+
+    positions = positions_df.copy()
+    positions["stock_name"] = positions["stock_name"].fillna("").astype(str).str.strip()
+    positions["stock_code"] = positions["stock_code"].fillna("").astype(str).str.strip().str.upper()
+    positions["currency"] = positions["currency"].fillna("").astype(str).str.strip().str.upper()
+    positions["market_value"] = pd.to_numeric(positions["market_value"], errors="coerce").fillna(0.0)
+    positions["total_cost"] = pd.to_numeric(positions.get("total_cost", 0.0), errors="coerce").fillna(0.0)
+    positions = positions[(positions["stock_name"] != "") | (positions["stock_code"] != "")]
+    if positions.empty:
+        return []
+
+    positions["holding_key"] = positions["stock_code"]
+    missing_code_mask = positions["holding_key"] == ""
+    positions.loc[missing_code_mask, "holding_key"] = (
+        "__NAME__" + positions.loc[missing_code_mask, "stock_name"].str.upper()
+    )
+    grouped_positions = (
+        positions.groupby(["holding_key", "stock_code", "stock_name", "currency"], as_index=False)[
+            ["market_value", "total_cost"]
+        ]
+        .sum()
+    )
+
+    if transactions_df.empty:
+        holding_flows = pd.DataFrame(
+            columns=["holding_key", "currency", "transaction_date", "cash_flow"]
+        )
+    else:
+        transactions = transactions_df.copy()
+        transactions["stock_name"] = transactions["stock_name"].fillna("").astype(str).str.strip()
+        transactions["stock_code"] = transactions["stock_code"].fillna("").astype(str).str.strip().str.upper()
+        transactions["price_currency"] = (
+            transactions["price_currency"].fillna("").astype(str).str.strip().str.upper()
+        )
+        transactions["transaction_date"] = pd.to_datetime(
+            transactions["transaction_date"], errors="coerce"
+        )
+        transactions["transaction_amount"] = pd.to_numeric(
+            transactions["transaction_amount"], errors="coerce"
+        )
+        transaction_type = transactions["transaction_type"].astype(str).str.strip().str.lower()
+        transactions = transactions.dropna(subset=["transaction_date", "transaction_amount"])
+        transactions["cash_flow"] = transactions["transaction_amount"]
+        buy_mask = transaction_type.eq("buy")
+        sell_mask = transaction_type.eq("sell")
+        transactions.loc[buy_mask, "cash_flow"] = -transactions.loc[buy_mask, "transaction_amount"].abs()
+        transactions.loc[sell_mask, "cash_flow"] = transactions.loc[sell_mask, "transaction_amount"].abs()
+
+        transactions["holding_key"] = transactions["stock_code"]
+        missing_tx_code_mask = transactions["holding_key"] == ""
+        transactions.loc[missing_tx_code_mask, "holding_key"] = (
+            "__NAME__" + transactions.loc[missing_tx_code_mask, "stock_name"].str.upper()
+        )
+        holding_flows = (
+            transactions.groupby(
+                ["holding_key", "price_currency", "transaction_date"], as_index=False
+            )["cash_flow"]
+            .sum()
+            .rename(columns={"price_currency": "currency"})
+            .sort_values(["holding_key", "currency", "transaction_date"], ignore_index=True)
+        )
+
+    rows: list[dict[str, object]] = []
+    for _, holding in grouped_positions.iterrows():
+        holding_key = str(holding["holding_key"])
+        currency = str(holding["currency"])
+        ending_value = float(holding["market_value"])
+        cost_basis = float(holding["total_cost"])
+        flow_rows = holding_flows[
+            (holding_flows["holding_key"] == holding_key)
+            & (holding_flows["currency"] == currency)
+        ].copy()
+
+        total_outflows = float(-flow_rows.loc[flow_rows["cash_flow"] < 0, "cash_flow"].sum())
+        total_inflows = float(flow_rows.loc[flow_rows["cash_flow"] > 0, "cash_flow"].sum())
+        assumption = build_missing_history_assumption(
+            currency=currency,
+            currency_flows=flow_rows,
+            currency_valuations=pd.DataFrame(
+                [{"month": pd.Timestamp(date.today()).normalize(), "currency": currency, "ending_value": ending_value}]
+            ),
+            cost_basis=cost_basis,
+            total_outflows=total_outflows,
+            total_inflows=total_inflows,
+        )
+        assumed_initial_outflow = float(assumption["amount"])
+        adjusted_outflows = total_outflows + assumed_initial_outflow
+        simple_return = None
+        if adjusted_outflows > 0:
+            simple_return = float(
+                (ending_value + total_inflows - adjusted_outflows) / adjusted_outflows
+            )
+        cagr = calculate_cagr(
+            adjusted_outflows=adjusted_outflows,
+            ending_value=ending_value,
+            total_inflows=total_inflows,
+            flows_df=flow_rows,
+            assumed_start_date=assumption["date"] if assumed_initial_outflow > 0 else None,
+        )
+
+        return_flows = flow_rows
+        if assumed_initial_outflow > 0:
+            return_flows = pd.concat(
+                [
+                    pd.DataFrame(
+                        [
+                            {
+                                "transaction_date": assumption["date"],
+                                "currency": currency,
+                                "cash_flow": -assumed_initial_outflow,
+                            }
+                        ]
+                    ),
+                    flow_rows,
+                ],
+                ignore_index=True,
+            ).sort_values("transaction_date", ignore_index=True)
+
+        irr_annualized = None
+        if not return_flows.empty:
+            cash_flow_dates = return_flows["transaction_date"].tolist()
+            cash_flows = return_flows["cash_flow"].tolist()
+            cash_flow_dates.append(pd.Timestamp(date.today()))
+            cash_flows.append(ending_value)
+            irr_annualized = calculate_xirr_annualized(cash_flow_dates, cash_flows)
+
+        twr = calculate_time_weighted_return(
+            return_flows,
+            pd.DataFrame(
+                [{"month": pd.Timestamp(date.today()).normalize(), "ending_value": ending_value}]
+            ),
+        )
+        rows.append(
+            {
+                "stock_code": str(holding["stock_code"]),
+                "stock_name": str(holding["stock_name"]),
+                "currency": currency,
+                "annualized_irr": irr_annualized,
+                "cagr": cagr,
+                "simple_return": simple_return,
+                "time_weighted_return": twr,
+                "assumption_note": (
+                    "Incomplete history; initial investment inferred"
+                    if assumed_initial_outflow > 0
+                    else ""
+                ),
+            }
+        )
+
+    return sorted(rows, key=lambda row: (row["stock_name"], row["stock_code"]))
 
 
 def build_missing_history_assumption(
@@ -303,6 +476,41 @@ def build_missing_history_assumption(
         "observed_buy_outflows": total_outflows,
         "observed_sell_inflows": total_inflows,
     }
+
+
+def calculate_cagr(
+    adjusted_outflows: float,
+    ending_value: float,
+    total_inflows: float,
+    flows_df: pd.DataFrame,
+    assumed_start_date: pd.Timestamp | None = None,
+) -> float | None:
+    """Calculate CAGR from total-return multiple and elapsed years."""
+    if adjusted_outflows <= 0:
+        return None
+
+    ending_wealth = ending_value + total_inflows
+    if ending_wealth <= 0:
+        return None
+
+    start_date: pd.Timestamp | None = None
+    if assumed_start_date is not None:
+        start_date = pd.Timestamp(assumed_start_date)
+    elif not flows_df.empty:
+        start_date = pd.Timestamp(flows_df["transaction_date"].min())
+
+    if start_date is None:
+        return None
+
+    end_date = pd.Timestamp(date.today())
+    elapsed_years = (end_date - start_date).days / 365.2425
+    if elapsed_years <= 0:
+        return None
+
+    total_return_multiple = ending_wealth / adjusted_outflows
+    if total_return_multiple <= 0:
+        return None
+    return float(total_return_multiple ** (1.0 / elapsed_years) - 1.0)
 
 
 def infer_assumed_initial_flow_date(
