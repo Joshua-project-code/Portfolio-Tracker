@@ -145,6 +145,19 @@
           <h2>Transaction Details</h2>
           <span id="transaction-caption" class="caption"></span>
         </div>
+        <div class="table-toolbar">
+          <input id="transactions-search" type="search" placeholder="Search transactions">
+          <select id="transactions-broker-filter">
+            <option value="">All brokers</option>
+          </select>
+          <select id="transactions-currency-filter">
+            <option value="">All currencies</option>
+          </select>
+          <select id="row-density">
+            <option value="comfortable">Comfortable rows</option>
+            <option value="compact">Compact rows</option>
+          </select>
+        </div>
         <div id="transactions-table" class="table-wrap"></div>
       </section>
 
@@ -152,6 +165,19 @@
         <div class="panel-heading">
           <h2>Investment Positions</h2>
           <span id="position-caption" class="caption"></span>
+        </div>
+        <div class="table-toolbar">
+          <input id="positions-search" type="search" placeholder="Search positions">
+          <select id="positions-broker-filter">
+            <option value="">All brokers</option>
+          </select>
+          <select id="positions-currency-filter">
+            <option value="">All currencies</option>
+          </select>
+          <select id="positions-row-density">
+            <option value="comfortable">Comfortable rows</option>
+            <option value="compact">Compact rows</option>
+          </select>
         </div>
         <div id="positions-table" class="table-wrap"></div>
       </section>

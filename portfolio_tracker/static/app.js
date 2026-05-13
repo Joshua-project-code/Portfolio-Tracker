@@ -14,6 +14,14 @@ const uploadMessage = document.querySelector("#upload-message");
 const statusText = document.querySelector("#status-text");
 const appNotice = document.querySelector("#app-notice");
 const adminModeBadge = document.querySelector("#admin-mode-badge");
+const transactionsSearchInput = document.querySelector("#transactions-search");
+const positionsSearchInput = document.querySelector("#positions-search");
+const transactionsBrokerFilter = document.querySelector("#transactions-broker-filter");
+const transactionsCurrencyFilter = document.querySelector("#transactions-currency-filter");
+const positionsBrokerFilter = document.querySelector("#positions-broker-filter");
+const positionsCurrencyFilter = document.querySelector("#positions-currency-filter");
+const rowDensitySelect = document.querySelector("#row-density");
+const positionsRowDensitySelect = document.querySelector("#positions-row-density");
 let currentChartMode = "seaborn";
 let currentChartSets = {
   seaborn: [],
@@ -27,7 +35,10 @@ let holdingPerformanceSort = {
 const DEFAULT_CONSOLE_MESSAGE = "Run the report to display parser output here.";
 const CONSOLE_OUTPUT_STORAGE_KEY = "portfolio_tracker_console_output";
 const ADMIN_MODE_CODE = "ADMIN";
+const CHART_MODE_STORAGE_KEY = "portfolio_tracker_chart_mode";
 let isAdminModeEnabled = false;
+let transactionsData = { columns: [], rows: [], total_rows: 0 };
+let positionsData = { columns: [], rows: [], total_rows: 0 };
 
 function setAdminModeUiState(enabled) {
   isAdminModeEnabled = enabled;
@@ -58,6 +69,47 @@ function setNotice(message, kind = "info") {
   appNotice.hidden = false;
   appNotice.textContent = message;
   appNotice.className = `notice-row ${kind}`;
+}
+
+function populateFilterSelect(element, values, defaultLabel) {
+  if (!element) {
+    return;
+  }
+  const currentValue = element.value;
+  element.innerHTML = "";
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = defaultLabel;
+  element.appendChild(defaultOption);
+  values.forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    element.appendChild(option);
+  });
+  if ([...values, ""].includes(currentValue)) {
+    element.value = currentValue;
+  }
+}
+
+function applyFilters(tableData, options) {
+  const rows = tableData.rows || [];
+  const search = (options.search || "").trim().toLowerCase();
+  const broker = options.broker || "";
+  const currency = options.currency || "";
+  return rows.filter((row) => {
+    if (broker && String(row.broker || "") !== broker) {
+      return false;
+    }
+    const rowCurrency = String(row.currency || row.price_currency || "");
+    if (currency && rowCurrency !== currency) {
+      return false;
+    }
+    if (!search) {
+      return true;
+    }
+    return Object.values(row).some((value) => String(value ?? "").toLowerCase().includes(search));
+  });
 }
 
 function formatPercentage(value) {
@@ -223,6 +275,10 @@ function renderHoldingPerformanceTable(rows = []) {
         || column.key === "time_weighted_return"
       ) {
         cell.className = "center-cell";
+        const metricValue = Number(row[column.key]);
+        if (Number.isFinite(metricValue)) {
+          cell.classList.add(metricValue >= 0 ? "return-positive" : "return-negative");
+        }
         cell.textContent = formatPercentage(row[column.key]);
       } else {
         cell.textContent = row[column.key] || "-";
@@ -472,6 +528,26 @@ function renderCharts(charts, cacheKey) {
       figure.appendChild(image);
     }
     caption.textContent = chartDisplayName(chart);
+    const actions = document.createElement("div");
+    actions.className = "chart-actions";
+    const expandButton = document.createElement("button");
+    expandButton.type = "button";
+    expandButton.textContent = "Expand";
+    expandButton.addEventListener("click", () => {
+      const expanded = figure.classList.toggle("chart-expanded");
+      expandButton.textContent = expanded ? "Collapse" : "Expand";
+    });
+    const openLink = document.createElement("a");
+    openLink.href = outputUrl(chart, cacheKey);
+    openLink.target = "_blank";
+    openLink.rel = "noreferrer";
+    openLink.textContent = "Open";
+    const downloadLink = document.createElement("a");
+    downloadLink.href = outputUrl(chart, cacheKey);
+    downloadLink.download = chart;
+    downloadLink.textContent = "Download";
+    actions.append(expandButton, openLink, downloadLink);
+    figure.appendChild(actions);
     figure.appendChild(caption);
     grid.appendChild(figure);
   });
@@ -479,6 +555,11 @@ function renderCharts(charts, cacheKey) {
 
 function setChartMode(mode) {
   currentChartMode = mode;
+  try {
+    window.localStorage.setItem(CHART_MODE_STORAGE_KEY, mode);
+  } catch (_error) {
+    // Ignore persistence failure and continue.
+  }
   showSeabornChartsButton.classList.toggle("active", mode === "seaborn");
   showPlotlyChartsButton.classList.toggle("active", mode === "plotly");
   renderCharts(currentChartSets[mode] || [], currentChartCacheKey);
@@ -513,6 +594,12 @@ function renderTable(elementId, tableData) {
       if (isNumericColumn(container.id, column)) {
         cell.className = "numeric-cell";
       }
+      if (container.id === "positions-table" && column === "unrealized_pl") {
+        const numberValue = Number(row[column]);
+        if (Number.isFinite(numberValue)) {
+          cell.classList.add(numberValue >= 0 ? "return-positive" : "return-negative");
+        }
+      }
       cell.textContent = formatDisplayValue(
         container.id,
         column,
@@ -525,6 +612,33 @@ function renderTable(elementId, tableData) {
 
   table.append(thead, tbody);
   container.appendChild(table);
+}
+
+function renderFilteredTables() {
+  const filteredTransactions = applyFilters(transactionsData, {
+    search: transactionsSearchInput?.value || "",
+    broker: transactionsBrokerFilter?.value || "",
+    currency: transactionsCurrencyFilter?.value || "",
+  });
+  const filteredPositions = applyFilters(positionsData, {
+    search: positionsSearchInput?.value || "",
+    broker: positionsBrokerFilter?.value || "",
+    currency: positionsCurrencyFilter?.value || "",
+  });
+  renderTable("#transactions-table", {
+    columns: transactionsData.columns || [],
+    rows: filteredTransactions,
+    total_rows: filteredTransactions.length,
+  });
+  renderTable("#positions-table", {
+    columns: positionsData.columns || [],
+    rows: filteredPositions,
+    total_rows: filteredPositions.length,
+  });
+  document.querySelector("#transaction-caption").textContent =
+    `Showing ${filteredTransactions.length} of ${transactionsData.total_rows || 0} row(s)`;
+  document.querySelector("#position-caption").textContent =
+    `Showing ${filteredPositions.length} of ${positionsData.total_rows || 0} row(s)`;
 }
 
 function clearScreen() {
@@ -543,6 +657,8 @@ function clearScreen() {
   currentChartCacheKey = Date.now().toString();
   renderCharts([], Date.now().toString());
   renderLinks("#csv-links", []);
+  transactionsData = { columns: [], rows: [], total_rows: 0 };
+  positionsData = { columns: [], rows: [], total_rows: 0 };
   renderTable("#transactions-table", { columns: [], rows: [], total_rows: 0 });
   renderTable("#positions-table", { columns: [], rows: [], total_rows: 0 });
   renderHoldingPerformanceTable([]);
@@ -579,7 +695,7 @@ async function deleteFiles(endpoint, runningStatus, successMessage, afterDelete 
       setNotice("Action partially completed. Some files are still in use.", "warn");
     } else {
       setConsoleOutput(statusMessage);
-      setStatus("Complete");
+      setStatus(`${successMessage}`);
       setNotice(statusMessage, "success");
     }
   } catch (error) {
@@ -593,7 +709,7 @@ async function deleteFiles(endpoint, runningStatus, successMessage, afterDelete 
 
 async function runReport() {
   setButtonsDisabled(true);
-  setStatus("Running");
+  setStatus("Generating report from broker files...");
   setConsoleOutput("Running report...");
   setNotice("Running report...", "info");
 
@@ -620,15 +736,31 @@ async function runReport() {
     currentChartCacheKey = `${data.generated_on || "chart"}-${Date.now()}`;
     renderCharts(currentChartSets[currentChartMode] || [], currentChartCacheKey);
     renderLinks("#csv-links", data.csv_files);
-    renderTable("#transactions-table", data.transactions);
-    renderTable("#positions-table", data.positions);
-
-    document.querySelector("#transaction-caption").textContent =
-      `Showing ${data.transactions.rows.length} row(s)`;
-    document.querySelector("#position-caption").textContent =
-      `Showing ${data.positions.rows.length} row(s)`;
+    transactionsData = data.transactions;
+    positionsData = data.positions;
+    populateFilterSelect(
+      transactionsBrokerFilter,
+      [...new Set((transactionsData.rows || []).map((row) => String(row.broker || "")).filter(Boolean))].sort(),
+      "All brokers"
+    );
+    populateFilterSelect(
+      transactionsCurrencyFilter,
+      [...new Set((transactionsData.rows || []).map((row) => String(row.price_currency || row.currency || "")).filter(Boolean))].sort(),
+      "All currencies"
+    );
+    populateFilterSelect(
+      positionsBrokerFilter,
+      [...new Set((positionsData.rows || []).map((row) => String(row.broker || "")).filter(Boolean))].sort(),
+      "All brokers"
+    );
+    populateFilterSelect(
+      positionsCurrencyFilter,
+      [...new Set((positionsData.rows || []).map((row) => String(row.currency || "")).filter(Boolean))].sort(),
+      "All currencies"
+    );
+    renderFilteredTables();
     setConsoleOutput(data.console_output || "No console output was produced.");
-    setStatus("Complete");
+    setStatus(`Report ready: ${data.transactions.total_rows} transactions, ${data.positions.total_rows} positions.`);
     setNotice("Report completed successfully.", "success");
   } catch (error) {
     setStatus("Failed");
@@ -649,7 +781,7 @@ async function uploadFiles(event) {
   }
 
   setButtonsDisabled(true);
-  setStatus("Uploading");
+  setStatus("Uploading broker files...");
   uploadMessage.textContent = "Uploading files...";
   setNotice("Uploading files...", "info");
 
@@ -749,8 +881,46 @@ clearScreenButton.addEventListener("click", () => {
 
   clearScreen();
 });
+transactionsSearchInput?.addEventListener("input", renderFilteredTables);
+positionsSearchInput?.addEventListener("input", renderFilteredTables);
+transactionsBrokerFilter?.addEventListener("change", renderFilteredTables);
+transactionsCurrencyFilter?.addEventListener("change", renderFilteredTables);
+positionsBrokerFilter?.addEventListener("change", renderFilteredTables);
+positionsCurrencyFilter?.addEventListener("change", renderFilteredTables);
+function applyRowDensity(value) {
+  const compact = value === "compact";
+  document.querySelector("#transactions-table").classList.toggle("compact-rows", compact);
+  document.querySelector("#positions-table").classList.toggle("compact-rows", compact);
+  document.querySelector("#holding-performance-table").classList.toggle("compact-rows", compact);
+}
+
+rowDensitySelect?.addEventListener("change", () => {
+  const value = rowDensitySelect.value;
+  if (positionsRowDensitySelect) {
+    positionsRowDensitySelect.value = value;
+  }
+  applyRowDensity(value);
+});
+
+positionsRowDensitySelect?.addEventListener("change", () => {
+  const value = positionsRowDensitySelect.value;
+  if (rowDensitySelect) {
+    rowDensitySelect.value = value;
+  }
+  applyRowDensity(value);
+});
 uploadForm.addEventListener("submit", uploadFiles);
 document.addEventListener("DOMContentLoaded", () => {
+  try {
+    const savedChartMode = window.localStorage.getItem(CHART_MODE_STORAGE_KEY);
+    if (savedChartMode === "seaborn" || savedChartMode === "plotly") {
+      currentChartMode = savedChartMode;
+      showSeabornChartsButton.classList.toggle("active", savedChartMode === "seaborn");
+      showPlotlyChartsButton.classList.toggle("active", savedChartMode === "plotly");
+    }
+  } catch (_error) {
+    // Ignore localStorage errors and keep defaults.
+  }
   setAdminModeUiState(false);
   runReport();
 });

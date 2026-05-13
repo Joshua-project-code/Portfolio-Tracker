@@ -404,6 +404,33 @@ main {
   grid-column: 1 / -1;
 }
 
+.chart-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 8px;
+}
+
+.chart-actions button,
+.chart-actions a {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 0;
+  padding: 6px 10px;
+  text-decoration: none;
+}
+
+.chart-actions button {
+  background: #ffffff;
+}
+
+.chart-expanded {
+  grid-column: 1 / -1;
+}
+
 .chart-grid img {
   background: #ffffff;
   display: block;
@@ -418,6 +445,10 @@ main {
   display: block;
   height: clamp(380px, 55vh, 560px);
   width: 100%;
+}
+
+.chart-expanded iframe {
+  height: min(80vh, 900px);
 }
 
 .chart-grid figcaption {
@@ -534,6 +565,22 @@ main {
   overflow-x: auto;
 }
 
+.table-toolbar {
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(180px, 2fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(150px, 1fr);
+  padding: 10px 16px;
+}
+
+.table-toolbar input,
+.table-toolbar select {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
 table {
   border-collapse: collapse;
   min-width: 980px;
@@ -576,6 +623,11 @@ td {
   font-size: 14px;
 }
 
+.compact-rows th,
+.compact-rows td {
+  padding: 6px 8px;
+}
+
 tbody tr:nth-child(even) {
   background: #fafcfd;
 }
@@ -592,6 +644,16 @@ tbody tr:hover {
 .center-cell {
   font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+.return-positive {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.return-negative {
+  color: #b91c1c;
+  font-weight: 700;
 }
 
 .table-wrap table th:first-child,
