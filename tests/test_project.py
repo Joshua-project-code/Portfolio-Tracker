@@ -64,6 +64,7 @@ from portfolio_tracker.poems_parser import (
 from portfolio_tracker.report_runner import (
     build_dataframes,
     dataframe_table,
+    derive_positions_as_of_date,
     find_broker_files_for_report,
     format_table_value,
     get_generated_chart_sets,
@@ -1368,6 +1369,19 @@ class ReportRunnerTests(unittest.TestCase):
 
         self.assertEqual(report["positions"]["rows"][0]["stock_code"], "ACME")
         self.assertEqual(report["performance"]["by_holding"][0]["stock_code"], "ACME")
+        self.assertEqual(report["positions_as_of"], "2026-01-02")
+
+    def test_derive_positions_as_of_date_prefers_latest_transaction_date(self) -> None:
+        transactions = pd.DataFrame(
+            {"transaction_date": [pd.Timestamp("2026-01-02"), pd.Timestamp("2026-02-10")]}
+        )
+        monthly_position_totals = pd.DataFrame(
+            {"month": [pd.Timestamp("2026-01-01")], "series": ["poems - USD"], "market_value": [100.0]}
+        )
+
+        as_of = derive_positions_as_of_date(transactions, monthly_position_totals)
+
+        self.assertEqual(as_of, "2026-02-10")
 
     def test_save_report_outputs_writes_stock_code_mapping(self) -> None:
         from portfolio_tracker import report_runner

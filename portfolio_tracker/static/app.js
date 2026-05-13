@@ -43,6 +43,7 @@ const CHART_MODE_STORAGE_KEY = "portfolio_tracker_chart_mode";
 let isAdminModeEnabled = false;
 let transactionsData = { columns: [], rows: [], total_rows: 0 };
 let positionsData = { columns: [], rows: [], total_rows: 0 };
+let positionsAsOfDate = "";
 
 function setAdminModeUiState(enabled) {
   isAdminModeEnabled = enabled;
@@ -691,8 +692,11 @@ function renderFilteredTables() {
   });
   document.querySelector("#transaction-caption").textContent =
     `Showing ${filteredTransactions.length} of ${transactionsData.total_rows || 0} row(s)`;
-  document.querySelector("#position-caption").textContent =
+  const rowSummary =
     `Showing ${filteredPositions.length} of ${positionsData.total_rows || 0} row(s)`;
+  document.querySelector("#position-caption").textContent = positionsAsOfDate
+    ? `${rowSummary} | As of ${positionsAsOfDate}`
+    : rowSummary;
 }
 
 function clearScreen() {
@@ -713,6 +717,7 @@ function clearScreen() {
   renderLinks("#csv-links", []);
   transactionsData = { columns: [], rows: [], total_rows: 0 };
   positionsData = { columns: [], rows: [], total_rows: 0 };
+  positionsAsOfDate = "";
   renderTable("#transactions-table", { columns: [], rows: [], total_rows: 0 });
   renderTable("#positions-table", { columns: [], rows: [], total_rows: 0 });
   renderHoldingPerformanceTable([]);
@@ -792,6 +797,7 @@ async function runReport() {
     renderLinks("#csv-links", data.csv_files);
     transactionsData = data.transactions;
     positionsData = data.positions;
+    positionsAsOfDate = String(data.positions_as_of || "");
     populateFilterSelect(
       transactionsBrokerFilter,
       [...new Set((transactionsData.rows || []).map((row) => String(row.broker || "")).filter(Boolean))].sort(),

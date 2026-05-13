@@ -364,6 +364,33 @@ def get_generated_chart_sets(today: str) -> dict[str, list[str]]:
     }
 
 
+def derive_positions_as_of_date(
+    transactions_df: pd.DataFrame,
+    monthly_position_totals_df: pd.DataFrame | None = None,
+) -> str | None:
+    """Derive the positions freshness date from parsed broker data."""
+    if not transactions_df.empty and "transaction_date" in transactions_df.columns:
+        transaction_dates = pd.to_datetime(
+            transactions_df["transaction_date"], errors="coerce"
+        ).dropna()
+        if not transaction_dates.empty:
+            return transaction_dates.max().date().isoformat()
+
+    if (
+        monthly_position_totals_df is not None
+        and not monthly_position_totals_df.empty
+        and "month" in monthly_position_totals_df.columns
+    ):
+        months = pd.to_datetime(
+            monthly_position_totals_df["month"], errors="coerce"
+        ).dropna()
+        if not months.empty:
+            month_end = months.max().to_period("M").to_timestamp("M")
+            return month_end.date().isoformat()
+
+    return None
+
+
 def run_report(
     root_path: Path = DEFAULT_BROKER_ROOT_PATH,
     prompt_for_missing_files: bool = False,
@@ -410,11 +437,16 @@ def run_report(
     performance = calculate_portfolio_performance_metrics(
         transactions_df, positions_for_display, monthly_position_totals_df
     )
+    positions_as_of = derive_positions_as_of_date(
+        transactions_df,
+        monthly_position_totals_df,
+    )
 
     return {
         "root_path": str(root_path),
         "output_path": str(DEFAULT_OUTPUT_PATH),
         "generated_on": today,
+        "positions_as_of": positions_as_of,
         "poems_files": [path.name for path in workbooks],
         "interactive_brokers_files": [path.name for path in csv_files],
         "transactions": dataframe_table(transactions_df),
