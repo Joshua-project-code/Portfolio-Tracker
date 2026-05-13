@@ -6,7 +6,7 @@ Run all tests from the project folder with:
 python -m unittest discover -s tests -v
 ```
 
-The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 85 catalogued test cases.
+The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 86 catalogued test cases.
 
 Keep this catalogue synchronized with `tests/test_project.py`. Whenever a test
 is added, removed, renamed, or materially changed, update the matching catalogue
@@ -99,3 +99,4 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-083 | `test_calculate_portfolio_performance_metrics_uses_assumptions_for_incomplete_history` | Calculates return metrics when transaction history does not cover current cost basis. | Returns IRR and TWR using an explicitly stated assumed initial investment. |
 | TC-084 | `test_calculate_portfolio_performance_metrics_handles_empty_inputs` | Handles empty transaction and position data. | Returns empty performance metrics with no assumptions or per-currency entries. |
 | TC-085 | `test_calculate_time_weighted_return_uses_date_weighted_external_flows` | Verifies TWR uses date-weighted Modified Dietz cash-flow handling. | Returns the hand-calculated sub-period return using exact transaction-date weighting. |
+| TC-086 | `test_debug_console_page_renders_shell` | Confirms Debug Console page is available and includes shared Back To Top behavior. | Response includes Debug Console shell, refresh control, and Back To Top button/script markers. |

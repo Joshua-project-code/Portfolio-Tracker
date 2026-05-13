@@ -1458,6 +1458,14 @@ class FlaskAppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Portfolio Tracker", response.data)
         self.assertIn(b"Application Testing", response.data)
+        self.assertIn(b"Admin Mode", response.data)
+        self.assertIn(b"Debug Console", response.data)
+        self.assertIn(b"back-to-top", response.data)
+        self.assertIn(b"transactions-search", response.data)
+        self.assertIn(b"positions-search", response.data)
+        self.assertIn(b"row-density", response.data)
+        self.assertIn(b"positions-row-density", response.data)
+        self.assertIn(b"back_to_top.js", response.data)
 
     def test_application_testing_page_renders_test_runner_shell(self) -> None:
         flask_app.app.config.update(TESTING=True)
@@ -1468,6 +1476,20 @@ class FlaskAppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Application Testing", response.data)
         self.assertIn(b"Run All Tests", response.data)
+        self.assertIn(b"back-to-top", response.data)
+        self.assertIn(b"back_to_top.js", response.data)
+
+    def test_debug_console_page_renders_shell(self) -> None:
+        flask_app.app.config.update(TESTING=True)
+        client = flask_app.app.test_client()
+
+        response = client.get("/debug-console")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Debug Console", response.data)
+        self.assertIn(b"refresh-console", response.data)
+        self.assertIn(b"back-to-top", response.data)
+        self.assertIn(b"back_to_top.js", response.data)
 
     def test_tests_api_returns_catalogued_test_cases(self) -> None:
         flask_app.app.config.update(TESTING=True)
@@ -1650,8 +1672,11 @@ class FlaskAppTests(unittest.TestCase):
             with patch.object(flask_app, "DEFAULT_STOCK_CODE_MAPPING_PATH", mapping_path):
                 response = client.get("/outputs/stock_code_mapping.csv")
 
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b"ACME,Acme Corp", response.data)
+            try:
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(b"ACME,Acme Corp", response.data)
+            finally:
+                response.close()
 
 
 if __name__ == "__main__":
