@@ -87,7 +87,7 @@ python -m unittest discover -s tests -v
 - `portfolio_tracker/chart_helpers.py`: Builds monthly summaries and saves Seaborn and Plotly line/pie charts with role-specific font sizes, right-side legends, and per-currency distribution pie files with small-slice aggregation.
 - `portfolio_tracker/output_helpers.py`: Writes dated CSV output files.
 - `portfolio_tracker/validation.py`: Prints duplicate full-row warnings.
-- `data/stock_mapping.csv`: User-editable stock-to-sector/geography mapping.
+- `data/stock_mapping.csv`: User-editable stock-code-to-sector/geography mapping.
 - `data/etf_country_matrix.csv`: User-editable country exposure percentage matrix for ETFs and individual listed holdings. Required identifier columns are `ETF Name` and `Stock Code`; all other columns are treated as country percentage columns.
 - `data/stock_code_mapping.csv`: Persisted generated stock-code/name history from broker reports. This file can be committed so future runs can recover known stock codes from current or historical broker names.
 - `tests/test_project.py`: Automated unittest coverage for parser helpers, broker parsers, report workflow helpers, output helpers, stock mapping, chart aggregation, validation output, and Flask routes.

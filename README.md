@@ -126,13 +126,13 @@ The Interactive Brokers CSV should include these sections:
 
 ### Stock Mapping
 
-The project includes `data/stock_mapping.csv`, which maps each `stock_name` to:
+The project includes `data/stock_mapping.csv`, which maps each `stock_code` to:
 
 - `sector`
 - `geography`
 
 The parser uses this mapping to create investment-position pie charts. If you
-want to change a stock's sector or geography, or if a new stock appears as
+want to change a stock's sector or geography, or if a new stock code appears as
 `Unmapped`, update `data/stock_mapping.csv` directly.
 
 This file is separate from the generated `data/stock_code_mapping.csv`,

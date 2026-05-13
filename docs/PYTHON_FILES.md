@@ -15,7 +15,7 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `portfolio_tracker/file_helpers.py` | Provides reusable file and spreadsheet helpers, including workbook and CSV discovery, Excel sheet lookup, column-name cleanup, and broker-name inference from folder paths. |
 | `portfolio_tracker/output_helpers.py` | Saves generated transaction and position dataframes to dated CSV files, using the report date when supplied and overwriting only matching filenames. |
 | `portfolio_tracker/chart_helpers.py` | Builds chart-ready summaries and saves Seaborn PNG and Plotly HTML monthly line charts and sector/geography pie charts, including role-specific typography, right-side legends, per-currency distribution files, and small-slice aggregation into `Others`. |
-| `portfolio_tracker/stock_mapping.py` | Loads `data/stock_mapping.csv`, normalizes stock names, and enriches positions with sector and geography classifications. |
+| `portfolio_tracker/stock_mapping.py` | Loads `data/stock_mapping.csv`, normalizes stock codes, and enriches positions with sector and geography classifications. |
 | `portfolio_tracker/stock_code_mapping.py` | Builds and persists generated `data/stock_code_mapping.csv`, mapping immutable stock codes to the latest stock name while retaining historical stock names when names change. |
 | `portfolio_tracker/poems_parser.py` | Parses POEMS Excel workbooks into the common transaction and position dataframe schemas. It also infers missing POEMS position stock codes from transaction rows where possible. |
 | `portfolio_tracker/interactive_brokers_parser.py` | Parses Interactive Brokers activity CSV files, extracting trades, open positions, and instrument descriptions into the common dataframe schemas. |
@@ -35,7 +35,7 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `portfolio_tracker/static/back_to_top.js` | Shared Back To Top button behavior used by all web pages. |
 | `portfolio_tracker/static/testing.js` | Frontend behavior for listing, running, and displaying application test results. |
 | `portfolio_tracker/static/styles.css` | Shared web app styling, including the dashboard font stack, layout, responsive tables, chart containers, and testing page styles. |
-| `data/stock_mapping.csv` | Editable stock-to-sector/geography mapping used for pie chart enrichment. |
+| `data/stock_mapping.csv` | Editable stock-code-to-sector/geography mapping used for pie chart enrichment. |
 | `data/etf_country_matrix.csv` | Editable country exposure percentage matrix for ETFs and individual listed holdings, used to calculate absolute country exposure from position market values. |
 | `data/stock_code_mapping.csv` | Persisted generated stock-code/name history created from broker reports. |
 | `docs/WEBAPP_USER_GUIDE.md` | Web app user guide covering Portfolio Tracker usage, country exposure maintenance, and Application Testing workflows. |

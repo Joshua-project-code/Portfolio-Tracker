@@ -91,7 +91,7 @@ This file lists DataFrames created during the Portfolio Tracker runtime workflow
 
 - `mapping`: Loaded/normalized `stock_mapping.csv`.
 - `positions`: Positions copy enriched by merge with mapping metadata.
-- `unmapped`: Series/DataFrame view of stock names missing mapping coverage.
+- `unmapped`: Series/DataFrame view of stock codes missing mapping coverage.
 
 ## Stock code mapping (`portfolio_tracker/stock_code_mapping.py`)
 

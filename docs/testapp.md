@@ -39,10 +39,10 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-023 | `test_parse_interactive_brokers_positions_filters_to_summary_rows` | Parses only IBKR open-position summary rows. | Returns one USD position for `Apple Inc` with market value `1550.0`. |
 | TC-024 | `test_parse_interactive_brokers_transactions_folder_returns_empty_schema_without_csvs` | Handles an IBKR folder with no CSV files. | Returns an empty transaction DataFrame with `TRANSACTION_COLUMNS`. |
 | TC-025 | `test_parse_interactive_brokers_positions_folder_uses_latest_trade_file` | Selects positions from the IBKR CSV with the latest trade date. | Returns the latest file's open-position snapshot. |
-| TC-026 | `test_load_stock_mapping_returns_empty_mapping_when_file_missing` | Handles a missing stock mapping CSV. | Returns an empty mapping DataFrame with `stock_name_key`, `sector`, and `geography`. |
+| TC-026 | `test_load_stock_mapping_returns_empty_mapping_when_file_missing` | Handles a missing stock mapping CSV. | Returns an empty mapping DataFrame with `stock_code_key`, `sector`, and `geography`. |
 | TC-027 | `test_load_stock_mapping_validates_required_columns` | Validates required stock mapping columns. | Raises `ValueError` naming missing `geography`. |
-| TC-028 | `test_load_stock_mapping_normalizes_values_and_deduplicates_by_key` | Normalizes stock mapping names, fills missing values, and deduplicates. | Returns one normalized `ACME CORP` mapping with filled `Unmapped` geography. |
-| TC-029 | `test_normalize_stock_name_uppercases_strips_and_handles_missing_values` | Normalizes stock names for lookups. | Returns `["ACME", ""]`. |
+| TC-028 | `test_load_stock_mapping_normalizes_values_and_deduplicates_by_key` | Normalizes stock mapping codes, fills missing values, and deduplicates. | Returns one normalized `ACME` mapping with filled `Unmapped` geography. |
+| TC-029 | `test_normalize_stock_code_uppercases_strips_and_handles_missing_values` | Normalizes stock codes for lookups. | Returns `["ACME", ""]`. |
 | TC-030 | `test_enrich_positions_with_mapping_adds_sector_and_geography` | Adds sector/geography data to positions and flags unmapped rows. | Known stock gets mapped values; unknown stock gets `Unmapped`. |
 | TC-031 | `test_enrich_positions_with_mapping_empty_positions_returns_expected_columns` | Handles empty positions during mapping enrichment. | Returns empty DataFrame with `sector` and `geography` columns. |
 | TC-032 | `test_build_monthly_transaction_totals_groups_by_month_broker_and_currency` | Aggregates transaction amounts by month, broker, and currency. | April POEMS USD total is `150`; May IB SGD total is separate. |

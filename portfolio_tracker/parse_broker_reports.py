@@ -97,7 +97,7 @@ def get_user_friendly_error_message(error: Exception) -> str:
             "A required column was missing from one of the input files.\n"
             f"Missing item: {error_text}\n"
             "Please check that the broker export format has not changed and that "
-            "stock_mapping.csv has the columns stock_name, sector, and geography."
+            "stock_mapping.csv has the columns stock_code, sector, and geography."
         )
 
     if isinstance(error, ValueError):

@@ -75,7 +75,7 @@ from portfolio_tracker.report_runner import (
 from portfolio_tracker.stock_mapping import (
     enrich_positions_with_mapping,
     load_stock_mapping,
-    normalize_stock_name,
+    normalize_stock_code,
 )
 from portfolio_tracker.stock_code_mapping import (
     build_stock_code_mapping,
@@ -491,13 +491,13 @@ class StockMappingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             mapping = load_stock_mapping(Path(temp_dir) / "missing.csv")
 
-            self.assertEqual(mapping.columns.tolist(), ["stock_name_key", "sector", "geography"])
+            self.assertEqual(mapping.columns.tolist(), ["stock_code_key", "sector", "geography"])
             self.assertTrue(mapping.empty)
 
     def test_load_stock_mapping_validates_required_columns(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             mapping_file = Path(temp_dir) / "stock_mapping.csv"
-            pd.DataFrame({"stock_name": ["Acme"], "sector": ["Tech"]}).to_csv(
+            pd.DataFrame({"stock_code": ["ACME"], "sector": ["Tech"]}).to_csv(
                 mapping_file, index=False
             )
 
@@ -509,7 +509,7 @@ class StockMappingTests(unittest.TestCase):
             mapping_file = Path(temp_dir) / "stock_mapping.csv"
             pd.DataFrame(
                 {
-                    "stock_name": [" Acme Corp ", "ACME CORP"],
+                    "stock_code": [" acme ", "ACME"],
                     "sector": [" Tech ", None],
                     "geography": [None, "US"],
                 }
@@ -518,12 +518,12 @@ class StockMappingTests(unittest.TestCase):
             mapping = load_stock_mapping(mapping_file)
 
             self.assertEqual(len(mapping), 1)
-            self.assertEqual(mapping.loc[0, "stock_name_key"], "ACME CORP")
+            self.assertEqual(mapping.loc[0, "stock_code_key"], "ACME")
             self.assertEqual(mapping.loc[0, "sector"], "Tech")
             self.assertEqual(mapping.loc[0, "geography"], "Unmapped")
 
-    def test_normalize_stock_name_uppercases_strips_and_handles_missing_values(self) -> None:
-        result = normalize_stock_name(pd.Series([" acme ", None]))
+    def test_normalize_stock_code_uppercases_strips_and_handles_missing_values(self) -> None:
+        result = normalize_stock_code(pd.Series([" acme ", None]))
 
         self.assertEqual(result.tolist(), ["ACME", ""])
 
@@ -531,12 +531,13 @@ class StockMappingTests(unittest.TestCase):
         positions = pd.DataFrame(
             {
                 "stock_name": ["Acme Corp", "Unknown"],
+                "stock_code": ["ACME", ""],
                 "market_value": [100, 50],
             }
         )
         mapping = pd.DataFrame(
             {
-                "stock_name_key": ["ACME CORP"],
+                "stock_code_key": ["ACME"],
                 "sector": ["Tech"],
                 "geography": ["US"],
             }
@@ -547,12 +548,12 @@ class StockMappingTests(unittest.TestCase):
         self.assertEqual(enriched.loc[0, "sector"], "Tech")
         self.assertEqual(enriched.loc[0, "geography"], "US")
         self.assertEqual(enriched.loc[1, "sector"], "Unmapped")
-        self.assertNotIn("stock_name_key", enriched.columns)
+        self.assertNotIn("stock_code_key", enriched.columns)
 
     def test_enrich_positions_with_mapping_empty_positions_returns_expected_columns(self) -> None:
         enriched = enrich_positions_with_mapping(
-            pd.DataFrame(columns=["stock_name"]),
-            pd.DataFrame(columns=["stock_name_key", "sector", "geography"]),
+            pd.DataFrame(columns=["stock_name", "stock_code"]),
+            pd.DataFrame(columns=["stock_code_key", "sector", "geography"]),
         )
 
         self.assertIn("sector", enriched.columns)
@@ -1433,7 +1434,7 @@ class ReportRunnerTests(unittest.TestCase):
                         report_runner,
                         "load_stock_mapping",
                         return_value=pd.DataFrame(
-                            columns=["stock_name_key", "sector", "geography"]
+                            columns=["stock_code_key", "sector", "geography"]
                         ),
                     )
                 )
