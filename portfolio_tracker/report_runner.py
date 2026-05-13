@@ -180,8 +180,8 @@ def save_report_outputs(
     transactions_df: pd.DataFrame,
     positions_df: pd.DataFrame,
     monthly_position_totals_df: pd.DataFrame | None = None,
-) -> None:
-    """Save report CSV files and chart images to the configured output folder."""
+) -> pd.DataFrame:
+    """Save report CSV/chart outputs and return the latest stock-code mapping."""
     today = date.today().isoformat()
     save_dataframes_to_csv(
         transactions_df,
@@ -197,6 +197,7 @@ def save_report_outputs(
     save_country_exposure_outputs(positions_df, stock_code_mapping_df, today)
     save_monthly_charts(workbooks, csv_files, transactions_df, monthly_position_totals_df)
     save_position_distribution_charts(positions_df)
+    return stock_code_mapping_df
 
 
 def save_country_exposure_outputs(
@@ -391,19 +392,23 @@ def run_report(
     transactions_df, positions_df = build_dataframes(workbooks, interactive_brokers_path)
     print_report_preview(workbooks, csv_files, transactions_df, positions_df)
     monthly_position_totals_df = build_monthly_position_totals(workbooks, csv_files)
-    save_report_outputs(
+    stock_code_mapping_df = save_report_outputs(
         workbooks,
         csv_files,
         transactions_df,
         positions_df,
         monthly_position_totals_df,
     )
+    positions_for_display = fill_missing_stock_codes_from_mapping(
+        positions_df,
+        stock_code_mapping_df,
+    )
 
     today = date.today().isoformat()
     chart_names, csv_names = get_generated_output_names(today)
     chart_sets = get_generated_chart_sets(today)
     performance = calculate_portfolio_performance_metrics(
-        transactions_df, positions_df, monthly_position_totals_df
+        transactions_df, positions_for_display, monthly_position_totals_df
     )
 
     return {
@@ -413,7 +418,7 @@ def run_report(
         "poems_files": [path.name for path in workbooks],
         "interactive_brokers_files": [path.name for path in csv_files],
         "transactions": dataframe_table(transactions_df),
-        "positions": dataframe_table(positions_df),
+        "positions": dataframe_table(positions_for_display),
         "charts": chart_names,
         "chart_sets": chart_sets,
         "csv_files": csv_names,

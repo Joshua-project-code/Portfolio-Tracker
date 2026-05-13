@@ -68,6 +68,7 @@ from portfolio_tracker.report_runner import (
     format_table_value,
     get_generated_chart_sets,
     get_generated_output_names,
+    run_report,
     run_report_with_console_output,
     wait_for_broker_files,
 )
@@ -1323,6 +1324,49 @@ class ReportRunnerTests(unittest.TestCase):
 
         self.assertEqual(report["console_output"], "")
         run_report.assert_called_once()
+
+    def test_run_report_fills_missing_stock_codes_for_positions_and_per_holding(self) -> None:
+        transactions = pd.DataFrame(
+            {
+                "transaction_date": [pd.Timestamp("2026-01-02")],
+                "stock_name": ["Acme Corp"],
+                "stock_code": ["ACME"],
+                "price_currency": ["USD"],
+                "transaction_amount": [100.0],
+                "transaction_type": ["buy"],
+            }
+        )
+        positions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp"],
+                "stock_code": [pd.NA],
+                "currency": ["USD"],
+                "market_value": [120.0],
+                "total_cost": [100.0],
+            }
+        )
+        stock_code_mapping = pd.DataFrame(
+            {"stock_code": ["ACME"], "stock_name": ["Acme Corp"], "old_stock_names": [pd.NA]}
+        )
+
+        with patch("portfolio_tracker.report_runner.find_broker_files_for_report", return_value=[]):
+            with patch(
+                "portfolio_tracker.report_runner.build_dataframes",
+                return_value=(transactions, positions),
+            ):
+                with patch("portfolio_tracker.report_runner.print_report_preview"):
+                    with patch(
+                        "portfolio_tracker.report_runner.build_monthly_position_totals",
+                        return_value=None,
+                    ):
+                        with patch(
+                            "portfolio_tracker.report_runner.save_report_outputs",
+                            return_value=stock_code_mapping,
+                        ):
+                            report = run_report(prompt_for_missing_files=False)
+
+        self.assertEqual(report["positions"]["rows"][0]["stock_code"], "ACME")
+        self.assertEqual(report["performance"]["by_holding"][0]["stock_code"], "ACME")
 
     def test_save_report_outputs_writes_stock_code_mapping(self) -> None:
         from portfolio_tracker import report_runner
