@@ -32,6 +32,10 @@ let holdingPerformanceSort = {
   column: "annualized_irr",
   direction: "desc",
 };
+let positionsSort = {
+  column: "market_value",
+  direction: "desc",
+};
 const DEFAULT_CONSOLE_MESSAGE = "Run the report to display parser output here.";
 const CONSOLE_OUTPUT_STORAGE_KEY = "portfolio_tracker_console_output";
 const ADMIN_MODE_CODE = "ADMIN";
@@ -580,14 +584,64 @@ function renderTable(elementId, tableData) {
   const tbody = document.createElement("tbody");
   const headRow = document.createElement("tr");
 
+  const tableId = container.id;
+  const isPositionsTable = tableId === "positions-table";
+  const sortedRows = isPositionsTable
+    ? [...(tableData.rows || [])].sort((left, right) => {
+      const column = positionsSort.column;
+      const leftRaw = left[column];
+      const rightRaw = right[column];
+      const leftNumber = Number(leftRaw);
+      const rightNumber = Number(rightRaw);
+      let comparison = 0;
+      if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+        comparison = leftNumber === rightNumber ? 0 : (leftNumber < rightNumber ? -1 : 1);
+      } else {
+        const leftText = String(leftRaw ?? "").toUpperCase();
+        const rightText = String(rightRaw ?? "").toUpperCase();
+        comparison = leftText.localeCompare(rightText);
+      }
+      return positionsSort.direction === "asc" ? comparison : -comparison;
+    })
+    : (tableData.rows || []);
+
   tableData.columns.forEach((column) => {
     const heading = document.createElement("th");
-    heading.textContent = displayName(column);
+    if (isPositionsTable) {
+      heading.classList.add("sortable-header");
+      heading.setAttribute("scope", "col");
+      heading.setAttribute("tabindex", "0");
+      const isCurrentSort = positionsSort.column === column;
+      const sortSuffix = isCurrentSort ? (positionsSort.direction === "asc" ? " \u2191" : " \u2193") : "";
+      heading.setAttribute(
+        "aria-sort",
+        isCurrentSort ? (positionsSort.direction === "asc" ? "ascending" : "descending") : "none"
+      );
+      heading.textContent = `${displayName(column)}${sortSuffix}`;
+      const applySort = () => {
+        if (positionsSort.column === column) {
+          positionsSort.direction = positionsSort.direction === "asc" ? "desc" : "asc";
+        } else {
+          positionsSort.column = column;
+          positionsSort.direction = isNumericColumn(tableId, column) ? "desc" : "asc";
+        }
+        renderFilteredTables();
+      };
+      heading.addEventListener("click", applySort);
+      heading.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          applySort();
+        }
+      });
+    } else {
+      heading.textContent = displayName(column);
+    }
     headRow.appendChild(heading);
   });
   thead.appendChild(headRow);
 
-  tableData.rows.forEach((row) => {
+  sortedRows.forEach((row) => {
     const bodyRow = document.createElement("tr");
     tableData.columns.forEach((column) => {
       const cell = document.createElement("td");
