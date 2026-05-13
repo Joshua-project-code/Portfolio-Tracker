@@ -160,12 +160,10 @@ def calculate_portfolio_performance_metrics(
     """Calculate IRR, simple return, and TWR without blending unlike currencies."""
     empty_metrics = {
         "annualized_irr": None,
-        "cagr": None,
         "simple_return": None,
         "time_weighted_return": None,
         "assumptions": [],
         "by_currency": {},
-        "by_holding": [],
     }
     if transactions_df.empty and positions_df.empty:
         return empty_metrics
@@ -284,6 +282,7 @@ def calculate_portfolio_performance_metrics(
     metrics = empty_metrics | {
         "assumptions": all_assumptions,
         "by_currency": by_currency,
+        "cagr": None,
         "by_holding": calculate_holding_performance_metrics(
             transactions_df,
             positions_df,
@@ -300,7 +299,8 @@ def calculate_holding_performance_metrics(
     positions_df: pd.DataFrame,
 ) -> list[dict[str, object]]:
     """Calculate per-holding IRR, simple return, and TWR for current positions."""
-    if positions_df.empty:
+    required_position_columns = {"stock_name", "stock_code", "currency", "market_value"}
+    if positions_df.empty or not required_position_columns.issubset(positions_df.columns):
         return []
 
     positions = positions_df.copy()
@@ -330,6 +330,16 @@ def calculate_holding_performance_metrics(
             columns=["holding_key", "currency", "transaction_date", "cash_flow"]
         )
     else:
+        required_transaction_columns = {
+            "stock_name",
+            "stock_code",
+            "price_currency",
+            "transaction_date",
+            "transaction_amount",
+            "transaction_type",
+        }
+        if not required_transaction_columns.issubset(transactions_df.columns):
+            return []
         transactions = transactions_df.copy()
         transactions["stock_name"] = transactions["stock_name"].fillna("").astype(str).str.strip()
         transactions["stock_code"] = transactions["stock_code"].fillna("").astype(str).str.strip().str.upper()

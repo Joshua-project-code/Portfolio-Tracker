@@ -99,11 +99,17 @@ button:disabled {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: 0;
+  padding: 16px;
+}
+
+.admin-panel {
+  border-color: #f3d0cc;
 }
 
 .app-footer {
   display: flex;
+  gap: 10px;
   justify-content: flex-end;
   margin: 0 auto;
   max-width: 1400px;

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Debug Console</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_version) }}">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>Debug Console</h1>
+        <p>Inspect report execution logs and error details.</p>
+      </div>
+      <div class="header-actions">
+        <a class="button-link" href="{{ url_for('index') }}">Portfolio Tracker</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Console Output</h2>
+          <button id="refresh-console" type="button">Refresh</button>
+        </div>
+        <pre id="console-output">Run the report to display parser output here.</pre>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='debug.js', v=static_version) }}"></script>
+  </body>
+</html>

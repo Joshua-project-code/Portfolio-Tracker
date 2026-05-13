@@ -15,6 +15,7 @@
       <div class="header-actions">
         <button id="show-upload" type="button">Upload Files</button>
         <button id="run-report" type="button">Run Report</button>
+        <button id="admin-mode-toggle" type="button">Admin Mode</button>
       </div>
     </header>
 
@@ -151,21 +152,21 @@
         <div id="positions-table" class="table-wrap"></div>
       </section>
 
-      <section class="panel">
+      <section id="admin-mode-panel" class="panel admin-panel" hidden>
         <div class="panel-heading">
-          <h2>Console Output</h2>
+          <h2>Admin Mode</h2>
+          <span class="caption">Destructive actions are restricted to admin mode.</span>
         </div>
-        <pre id="console-output">Run the report to display parser output here.</pre>
-      </section>
-
-      <section class="maintenance-actions" aria-label="Maintenance actions">
-        <button id="delete-broker-files" class="danger-button" type="button">Delete Broker Files</button>
-        <button id="delete-output-files" class="danger-button" type="button">Delete Output Files</button>
-        <button id="clear-screen" class="danger-button" type="button">Clear Screen</button>
+        <section class="maintenance-actions" aria-label="Maintenance actions">
+          <button id="delete-broker-files" class="danger-button" type="button">Delete Broker Files</button>
+          <button id="delete-output-files" class="danger-button" type="button">Delete Output Files</button>
+          <button id="clear-screen" class="danger-button" type="button">Clear Screen</button>
+        </section>
       </section>
     </main>
 
     <footer class="app-footer">
+      <a class="button-link secondary-link" href="{{ url_for('debug_console') }}">Debug Console</a>
       <a class="button-link secondary-link" href="{{ url_for('application_testing') }}">Application Testing</a>
     </footer>
 

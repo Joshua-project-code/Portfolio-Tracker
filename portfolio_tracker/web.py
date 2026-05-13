@@ -54,6 +54,7 @@ def get_static_version() -> int:
     """Return a cache-busting version for frontend assets."""
     asset_paths = [
         STATIC_PATH / "app.js",
+        STATIC_PATH / "debug.js",
         STATIC_PATH / "styles.css",
     ]
     return max(int(path.stat().st_mtime) for path in asset_paths if path.exists())
@@ -74,6 +75,15 @@ def index():
 def application_testing():
     """Render the Application Testing page."""
     return render_template("application_testing.html")
+
+
+@app.get("/debug-console")
+def debug_console():
+    """Render the end-user debug console page."""
+    return render_template(
+        "debug_console.html",
+        static_version=get_static_version(),
+    )
 
 
 def parse_test_catalog() -> list[dict[str, str]]:

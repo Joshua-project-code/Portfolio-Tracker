@@ -5,6 +5,8 @@ const deleteOutputFilesButton = document.querySelector("#delete-output-files");
 const clearScreenButton = document.querySelector("#clear-screen");
 const showSeabornChartsButton = document.querySelector("#show-seaborn-charts");
 const showPlotlyChartsButton = document.querySelector("#show-plotly-charts");
+const adminModeToggleButton = document.querySelector("#admin-mode-toggle");
+const adminModePanel = document.querySelector("#admin-mode-panel");
 const uploadPanel = document.querySelector("#upload-panel");
 const uploadForm = document.querySelector("#upload-form");
 const uploadSubmitButton = document.querySelector("#upload-submit");
@@ -20,6 +22,19 @@ let holdingPerformanceSort = {
   column: "annualized_irr",
   direction: "desc",
 };
+const DEFAULT_CONSOLE_MESSAGE = "Run the report to display parser output here.";
+const CONSOLE_OUTPUT_STORAGE_KEY = "portfolio_tracker_console_output";
+const ADMIN_MODE_CODE = "ADMIN";
+let isAdminModeEnabled = false;
+
+function setConsoleOutput(message) {
+  const text = message || DEFAULT_CONSOLE_MESSAGE;
+  try {
+    window.localStorage.setItem(CONSOLE_OUTPUT_STORAGE_KEY, text);
+  } catch (_error) {
+    // Best effort only; continue rendering without local persistence.
+  }
+}
 
 function formatPercentage(value) {
   const numberValue = Number(value);
@@ -434,8 +449,7 @@ function clearScreen() {
 
   document.querySelector("#transaction-caption").textContent = "";
   document.querySelector("#position-caption").textContent = "";
-  document.querySelector("#console-output").textContent =
-    "Run the report to display parser output here.";
+  setConsoleOutput(DEFAULT_CONSOLE_MESSAGE);
   setStatus("Ready");
 }
 
@@ -456,16 +470,17 @@ async function deleteFiles(endpoint, runningStatus, successMessage, afterDelete 
       afterDelete(data);
     }
     if (failedCount) {
-      document.querySelector("#console-output").textContent =
-        `${statusMessage} ${failedCount} file(s) could not be deleted because they are still in use. Close the file or restart the app, then try again.`;
+      setConsoleOutput(
+        `${statusMessage} ${failedCount} file(s) could not be deleted because they are still in use. Close the file or restart the app, then try again.`
+      );
       setStatus("Partial");
     } else {
-      document.querySelector("#console-output").textContent = statusMessage;
+      setConsoleOutput(statusMessage);
       setStatus("Complete");
     }
   } catch (error) {
     setStatus("Failed");
-    document.querySelector("#console-output").textContent = error.message;
+    setConsoleOutput(error.message);
   } finally {
     setButtonsDisabled(false);
   }
@@ -474,7 +489,7 @@ async function deleteFiles(endpoint, runningStatus, successMessage, afterDelete 
 async function runReport() {
   setButtonsDisabled(true);
   setStatus("Running");
-  document.querySelector("#console-output").textContent = "Running report...";
+  setConsoleOutput("Running report...");
 
   try {
     const response = await fetch("/api/run-report");
@@ -506,12 +521,11 @@ async function runReport() {
       `Showing ${data.transactions.rows.length} row(s)`;
     document.querySelector("#position-caption").textContent =
       `Showing ${data.positions.rows.length} row(s)`;
-    document.querySelector("#console-output").textContent =
-      data.console_output || "No console output was produced.";
+    setConsoleOutput(data.console_output || "No console output was produced.");
     setStatus("Complete");
   } catch (error) {
     setStatus("Failed");
-    document.querySelector("#console-output").textContent = error.message;
+    setConsoleOutput(error.message);
   } finally {
     setButtonsDisabled(false);
   }
@@ -553,6 +567,27 @@ async function uploadFiles(event) {
 
 showUploadButton.addEventListener("click", () => {
   uploadPanel.hidden = !uploadPanel.hidden;
+});
+adminModeToggleButton?.addEventListener("click", () => {
+  if (isAdminModeEnabled) {
+    isAdminModeEnabled = false;
+    adminModePanel.hidden = true;
+    adminModeToggleButton.textContent = "Admin Mode";
+    return;
+  }
+
+  const unlockCode = window.prompt("Enter ADMIN to log in to Admin Mode:");
+  if (unlockCode !== ADMIN_MODE_CODE) {
+    window.alert("Invalid admin code.");
+    return;
+  }
+
+  isAdminModeEnabled = true;
+  if (adminModePanel.hidden) {
+    adminModePanel.hidden = false;
+    adminModePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  adminModeToggleButton.textContent = "Admin Mode Enabled";
 });
 runButton.addEventListener("click", runReport);
 showSeabornChartsButton.addEventListener("click", () => {
