@@ -65,7 +65,7 @@ The report produces:
 - chart images and interactive charts
 - downloadable CSV links
 - transaction and investment-position tables
-- parser console output
+- parser console output (on a separate Debug Console page)
 
 Generated files are written to the sibling `Output` folder using the current
 date in the filename.
@@ -75,8 +75,11 @@ If more files are loaded, scroll inside the list to see the rest.
 
 ### Review Portfolio Performance
 
-The `Portfolio Performance` section shows annualized IRR, simple return, and
-time-weighted return above the charts.
+The `Portfolio Performance` section shows annualized IRR, simple return,
+time-weighted return, and CAGR above the charts.
+
+It also includes a per-holding (stocks/ETFs) return table with sortable
+columns for IRR, SR, TWR, and CAGR.
 
 The app keeps currencies separate because there is no FX conversion table in
 the project. Simple return is based on current position `market_value` versus
@@ -109,6 +112,14 @@ The `Charts` section has two views:
 
 Each report run generates both chart sets. Use the toggle without rerunning the
 report.
+
+Chart presentation details:
+
+- Portfolio trend and transaction trend charts span full width for readability.
+- Sector and geography distributions are split into separate charts per currency
+  (for example, one USD chart and one SGD chart) instead of combined subplots.
+- Country exposure pie charts show up to six slices, with the remaining
+  exposure grouped into `Others`.
 
 ### Review CSV Outputs
 
@@ -143,9 +154,13 @@ Rows without a matching stock code stay in `country_exposure_YYYY-MM-DD.csv`,
 but they contribute zero to `country_exposure_totals_YYYY-MM-DD.csv` and the pie
 charts.
 
-### Maintenance Buttons
+### Admin Mode And Maintenance Actions
 
-The bottom of the Portfolio Tracker page includes maintenance actions:
+The dashboard header includes an `Admin Mode` button. Enter `ADMIN` to enable
+admin mode. While enabled, the status card shows an `Admin Mode Active` badge
+and the admin panel displays maintenance actions.
+
+The admin panel includes:
 
 - `Delete Broker Files`: deletes files from the sibling `POEMS` and
   `Interactive Brokers` folders. Existing on-screen report output remains until
@@ -157,6 +172,16 @@ The bottom of the Portfolio Tracker page includes maintenance actions:
   files or generated output files.
 
 Each delete action asks for confirmation before it runs.
+
+### Debug Console
+
+Click `Debug Console` at the bottom of the main page to open parser and runtime
+messages on a separate page.
+
+### Back To Top Button
+
+All web pages include a floating `Back To Top` button that appears after you
+scroll down.
 
 ## Application Testing
 
@@ -225,8 +250,8 @@ the test list and expected-output descriptions.
 If the app shows no broker files, confirm that files are in the sibling `POEMS`
 or `Interactive Brokers` folders, or upload them through the web page.
 
-If a chart or CSV is missing, run the report again and inspect the `Console
-Output` panel for parser errors.
+If a chart or CSV is missing, run the report again and inspect the `Debug
+Console` page for parser errors.
 
 If a holding appears in `country_exposure_YYYY-MM-DD.csv` with all zero country
 values, add or correct its stock code row in `data/etf_country_matrix.csv`.

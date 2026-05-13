@@ -160,7 +160,7 @@ writes:
   `currency` and `country`
 - `country_exposure_pie_SGD_YYYY-MM-DD.png` and
   `country_exposure_pie_USD_YYYY-MM-DD.png`: country exposure pie charts with
-  the top four countries shown separately and the remaining exposure grouped as
+  the top five countries shown separately and the remaining exposure grouped as
   `Others`
 
 When a current position is missing a stock code, the workflow uses
@@ -199,8 +199,9 @@ http://127.0.0.1:5000
 Click `Run Report` to parse the broker files and view:
 
 - Loaded POEMS and Interactive Brokers files
-- Annualized IRR, simple return, and time-weighted return metrics where the
+- Annualized IRR, simple return, time-weighted return, and CAGR where the
   available data supports them
+- Per-holding return table for stocks/ETFs with sortable IRR/SR/TWR/CAGR columns
 - Scrollable transaction and investment-position tables
 - Generated chart images
 - Country exposure pie charts for SGD and USD in the Seaborn chart view
@@ -215,7 +216,9 @@ The Charts section includes a `Seaborn` / `Plotly` toggle. Each report run
 generates both chart sets. The Seaborn view is shown by default, and the
 interactive Plotly view can be selected without re-running the report.
 Both chart types use dashboard-oriented typography with right-side legends so
-the plot area remains readable and legend text is not clipped.
+the plot area remains readable and legend text is not clipped. The dashboard
+orders charts by group (`Portfolio Trend`, `Transactions Trend`, `Allocation`,
+`Country Exposure`). Portfolio and transaction trend charts span full width.
 
 Performance metrics are calculated by currency because the project does not
 have FX conversion data. When transaction history is incomplete, the app assumes
@@ -241,8 +244,12 @@ Click `Upload Files` to add new broker exports from the web app:
 - Interactive Brokers uploads accept `.csv` files and save them to the sibling `Interactive Brokers` folder
 - After a successful upload, the web app automatically re-runs the report using all files in both broker folders
 
-The maintenance buttons at the bottom of the web app help reset local files and
-the browser view:
+The `Admin Mode` button in the header gates destructive maintenance actions.
+Enter `ADMIN` to enable admin mode. When enabled, the `Admin Mode Active` badge
+appears in the status card and the admin panel is shown.
+
+The maintenance actions in the admin panel help reset local files and the
+browser view:
 
 - `Delete Broker Files` asks for confirmation, deletes files from the sibling
   `POEMS` and `Interactive Brokers` folders, and updates only the input-file
@@ -252,12 +259,17 @@ the browser view:
   and chart images remain visible until you run another report or clear the
   screen.
 - `Clear Screen` asks for confirmation and clears all displayed counts, input
-  lists, CSV links, charts, tables, captions, and console text. It does not
-  delete any files.
+  lists, CSV links, charts, tables, and captions. It does not delete any files.
+
+Click `Debug Console` at the bottom of the page to open parser/debug output on a
+separate page.
 
 Click `Application Testing` at the bottom of the page to open the automated test page. The page lists
 the catalogued test cases from `docs/testapp.md`, lets you run each test
 individually, and includes a `Run All Tests` button with a pass-count summary.
+
+All webpages include a floating `Back To Top` button that appears after you
+scroll down.
 
 See `docs/WEBAPP_USER_GUIDE.md` for the full web app and testing workflow.
 
@@ -278,11 +290,11 @@ The script will print:
 - Duplicate-record warnings, if duplicates exist
 - Seaborn PNG and Plotly HTML monthly investment-position line charts by broker and currency saved to `Output`
 - Seaborn PNG and Plotly HTML monthly transaction-amount line charts by broker and currency saved to `Output`
-- Seaborn PNG and Plotly HTML sector and geography investment-position pie charts by currency saved to `Output`; slices under 10% are grouped as `Others`
+- Seaborn PNG and Plotly HTML sector and geography investment-position pie charts saved as one file per currency (for example, `..._USD_...`, `..._SGD_...`); slices under 10% are grouped as `Others`
 - Country exposure CSV files saved to `Output`, including per-position country
   exposure and currency/country totals
 - SGD and USD country exposure pie charts saved to `Output`; each chart shows
-  up to five slices, with the final slice grouped as `Others`
+  up to six slices, with the final slice grouped as `Others`
 - Chart titles, axes, ticks, legends, and pie percentages use role-specific font sizes for readability
 - Line and pie chart legends are placed on the right side of the plot area
 - A persistent `data/stock_code_mapping.csv` file saved with columns
@@ -310,14 +322,18 @@ Vibe Coding/
 |   +-- country_exposure_totals_2026-04-28.csv
 |   +-- seaborn_investment_positions_by_month_2026-04-28.png
 |   +-- seaborn_transactions_by_month_2026-04-28.png
-|   +-- seaborn_sector_distribution_2026-04-28.png
-|   +-- seaborn_geography_distribution_2026-04-28.png
+|   +-- seaborn_sector_distribution_USD_2026-04-28.png
+|   +-- seaborn_sector_distribution_SGD_2026-04-28.png
+|   +-- seaborn_geography_distribution_USD_2026-04-28.png
+|   +-- seaborn_geography_distribution_SGD_2026-04-28.png
 |   +-- country_exposure_pie_SGD_2026-04-28.png
 |   +-- country_exposure_pie_USD_2026-04-28.png
 |   +-- plotly_investment_positions_by_month_2026-04-28.html
 |   +-- plotly_transactions_by_month_2026-04-28.html
-|   +-- plotly_sector_distribution_2026-04-28.html
-|   +-- plotly_geography_distribution_2026-04-28.html
+|   +-- plotly_sector_distribution_USD_2026-04-28.html
+|   +-- plotly_sector_distribution_SGD_2026-04-28.html
+|   +-- plotly_geography_distribution_USD_2026-04-28.html
+|   +-- plotly_geography_distribution_SGD_2026-04-28.html
 +-- Portfolio Tracker/
 |   +-- data/
 |   |   +-- stock_code_mapping.csv

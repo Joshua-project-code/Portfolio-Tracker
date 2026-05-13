@@ -30,6 +30,7 @@ This file lists DataFrames created during the Portfolio Tracker runtime workflow
 - `currency_flows`: Currency-specific subset of normalized investor cash flows.
 - `currency_valuations`: Currency-specific subset of valuation points used for assumptions and TWR.
 - `return_flows`: Currency-specific cash-flow dataframe used for IRR/TWR, including an assumed initial outflow when transaction history is incomplete.
+- `rows`: Per-holding metric output rows (`annualized_irr`, `simple_return`, `time_weighted_return`, `cagr`, `assumption_note`) for stocks/ETFs in current positions.
 - `assumption`: Per-currency inferred missing-history assumption built from cost basis, observed buy outflows, observed sell inflows, and available valuation/transaction dates.
 - `flows`: Currency-specific external cash-flow dataframe used by TWR with exact transaction dates.
 - `period_flows`: External cash flows that fall inside one valuation-to-valuation TWR sub-period.
@@ -71,6 +72,7 @@ This file lists DataFrames created during the Portfolio Tracker runtime workflow
 - `chart_positions`: Positions copy coerced for pie charting.
 - `totals`: Grouped currency/category pie totals.
 - `currency_totals`: Per-currency pie slice totals.
+- `chart_file`: Per-currency chart output file path for sector/geography distribution charts.
 - `large_totals`: Pie slices above threshold.
 
 ## ETF country exposure (`portfolio_tracker/etf_country_exposure.py`)

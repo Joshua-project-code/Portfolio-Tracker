@@ -82,8 +82,10 @@ Acceptance criteria:
 - The web app can toggle between Seaborn and Plotly chart sets without rerunning
   the report.
 - Chart legends and labels are readable in the web app.
-- The dashboard shows annualized IRR, simple return, and time-weighted return
-  above the charts where the available data supports those calculations.
+- The dashboard shows annualized IRR, simple return, time-weighted return, and
+  CAGR above the charts where the available data supports those calculations.
+- The dashboard shows a per-holding return table (stocks/ETFs) with sortable
+  IRR, SR, TWR, and CAGR columns.
 - Return metrics are kept currency-specific unless FX conversion data is added.
 - When transaction history is incomplete, the dashboard states the assumed
   initial investment used to calculate IRR and time-weighted return.
@@ -92,6 +94,8 @@ Acceptance criteria:
 - When transaction history covers the current position cost basis, IRR and
   time-weighted return are calculated without adding an assumed starting
   investment.
+- Monthly trend charts span full width for readability.
+- Sector/geography distribution charts are saved as one chart per currency.
 
 ## Country Exposure Stories
 
@@ -162,6 +166,7 @@ that I can reset the source folders before loading a new dataset.
 Acceptance criteria:
 
 - The action asks for confirmation.
+- The action is available only when admin mode is enabled.
 - Files are removed from the sibling `POEMS` and `Interactive Brokers` folders.
 - The folders themselves remain available for future uploads.
 - The current browser display is not unexpectedly cleared.
@@ -174,6 +179,7 @@ old report artifacts.
 Acceptance criteria:
 
 - The action asks for confirmation.
+- The action is available only when admin mode is enabled.
 - Files are removed from the sibling `Output` folder.
 - The `Output` folder remains available for future reports.
 - Existing displayed tables and charts remain visible until rerun or cleared.
@@ -186,9 +192,32 @@ reset the dashboard view without deleting local files.
 Acceptance criteria:
 
 - The action asks for confirmation.
+- The action is available only when admin mode is enabled.
 - Counts, file lists, CSV links, charts, tables, captions, and console output
   are cleared.
 - Source files and generated output files are not deleted.
+
+### US-017 Separate Debug Console Page
+
+As a portfolio owner, I want parser/debug output on a separate page so that the
+main dashboard remains focused on portfolio insights.
+
+Acceptance criteria:
+
+- The main dashboard does not display inline console output.
+- A `Debug Console` link opens a separate page for parser/debug messages.
+- Report and maintenance actions update the shared debug output text.
+
+### US-018 Back To Top Across Web Pages
+
+As a user, I want a Back To Top button on every web page so I can quickly
+return to the top after scrolling.
+
+Acceptance criteria:
+
+- A floating `Back To Top` button appears after scrolling down.
+- Clicking the button smoothly scrolls to the top.
+- The button is available on Portfolio Tracker, Debug Console, and Application Testing pages.
 
 ## Application Testing Stories
 
@@ -259,7 +288,7 @@ flowchart TD
     G --> H[Update stock code mapping]
     H --> I[Apply sector and geography mapping]
     H --> J[Apply country exposure matrix]
-    G --> O[Calculate IRR, simple return, TWR, and assumptions]
+    G --> O[Calculate IRR, simple return, TWR, CAGR, and assumptions]
     I --> K[Generate distribution charts]
     J --> L[Generate country exposure CSVs and pie charts]
     G --> M[Generate transaction and position CSVs]
@@ -330,3 +359,5 @@ sequenceDiagram
 | US-014 | `portfolio_tracker/web.py`, `portfolio_tracker/static/testing.js`, `tests/test_project.py` |
 | US-015 | `portfolio_tracker/web.py`, `portfolio_tracker/static/testing.js`, `tests/test_project.py` |
 | US-016 | `README.md`, `docs/WEBAPP_USER_GUIDE.md`, `docs/USER_STORIES.md`, `docs/testapp.md`, `docs/PYTHON_FILES.md`, `CLAUDE.md` |
+| US-017 | `portfolio_tracker/web.py`, `portfolio_tracker/templates/debug_console.html`, `portfolio_tracker/static/debug.js`, `portfolio_tracker/static/app.js` |
+| US-018 | `portfolio_tracker/templates/index.html`, `portfolio_tracker/templates/debug_console.html`, `portfolio_tracker/templates/application_testing.html`, `portfolio_tracker/static/back_to_top.js`, `portfolio_tracker/static/styles.css` |

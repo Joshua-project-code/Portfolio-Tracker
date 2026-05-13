@@ -65,13 +65,16 @@ python -m unittest discover -s tests -v
 
 - `app.py`: Project-root Flask launcher that imports `portfolio_tracker.web`.
 - `requirements.txt`: Runtime and test Python dependencies.
-- `portfolio_tracker/web.py`: Flask web server for the Portfolio Tracker UI, Application Testing page, upload API, report API, cleanup APIs, static asset versioning, and test APIs.
+- `portfolio_tracker/web.py`: Flask web server for the Portfolio Tracker UI, Debug Console page, Application Testing page, upload API, report API, cleanup APIs, static asset versioning, and test APIs.
 - `portfolio_tracker/parse_broker_reports.py`: Main CLI entry point and user-friendly error handling.
 - `portfolio_tracker/report_runner.py`: Shared report workflow used by the CLI and web app, including broker file discovery, dataframe construction, console preview output, CSV/chart generation, chart-set response serialization, and web table serialization.
-- `portfolio_tracker/performance_metrics.py`: Portfolio performance calculations, including cash-flow normalization, dynamic incomplete-history assumptions, annualized IRR, simple return, and chained Modified Dietz TWR by currency.
+- `portfolio_tracker/performance_metrics.py`: Portfolio performance calculations, including cash-flow normalization, dynamic incomplete-history assumptions, annualized IRR, simple return, time-weighted return, and CAGR by currency, plus per-holding return metrics.
 - `portfolio_tracker/templates/index.html`: Main web app page rendered by Flask.
+- `portfolio_tracker/templates/debug_console.html`: Separate Debug Console page rendered by Flask.
 - `portfolio_tracker/templates/application_testing.html`: Application Testing page rendered by Flask.
-- `portfolio_tracker/static/app.js`: Frontend upload, report, Seaborn/Plotly chart-library toggle, cleanup confirmation, delete-result handling, and rendering logic.
+- `portfolio_tracker/static/app.js`: Frontend upload, report, Seaborn/Plotly chart-library toggle, admin-mode gated maintenance actions, notifications, and rendering logic.
+- `portfolio_tracker/static/debug.js`: Frontend Debug Console page behavior.
+- `portfolio_tracker/static/back_to_top.js`: Shared floating Back To Top button behavior for all webpages.
 - `portfolio_tracker/static/testing.js`: Frontend test catalogue loading, individual test execution, full-suite execution, status rendering, and pass-count summary logic.
 - `portfolio_tracker/static/styles.css`: Web app styles, including the dashboard font stack, responsive layout, chart containers, and testing page styles.
 - `portfolio_tracker/constants.py`: Shared paths, extensions, and canonical output schemas.
@@ -81,7 +84,7 @@ python -m unittest discover -s tests -v
 - `portfolio_tracker/interactive_brokers_parser.py`: Interactive Brokers CSV section, transaction, and position parsing.
 - `portfolio_tracker/stock_mapping.py`: Loads `data/stock_mapping.csv` and adds sector/geography metadata to positions.
 - `portfolio_tracker/stock_code_mapping.py`: Builds and persists generated `data/stock_code_mapping.csv`, mapping stock codes to latest stock names and retaining old stock names when names change.
-- `portfolio_tracker/chart_helpers.py`: Builds monthly summaries and saves Seaborn and Plotly line/pie charts with role-specific font sizes, right-side legends, currency-separated pies, and small-slice aggregation.
+- `portfolio_tracker/chart_helpers.py`: Builds monthly summaries and saves Seaborn and Plotly line/pie charts with role-specific font sizes, right-side legends, and per-currency distribution pie files with small-slice aggregation.
 - `portfolio_tracker/output_helpers.py`: Writes dated CSV output files.
 - `portfolio_tracker/validation.py`: Prints duplicate full-row warnings.
 - `data/stock_mapping.csv`: User-editable stock-to-sector/geography mapping.
@@ -140,7 +143,7 @@ Country exposure output files include:
 - `../Output/country_exposure_pie_SGD_YYYY-MM-DD.png`
 - `../Output/country_exposure_pie_USD_YYYY-MM-DD.png`
 
-The country exposure pie charts show the top four countries by currency and
+The country exposure pie charts show the top five countries by currency and
 aggregate the remaining countries into `Others`.
 
 ## Coding Guidelines
