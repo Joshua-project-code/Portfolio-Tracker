@@ -50,8 +50,10 @@
         <div>
           <span class="label">Status</span>
           <strong id="status-text">Ready</strong>
+          <span id="admin-mode-badge" class="status-badge" hidden>Admin Mode Active</span>
         </div>
       </section>
+      <section id="app-notice" class="notice-row" aria-live="polite" hidden></section>
 
       <section class="summary-grid">
         <article class="metric">
@@ -113,6 +115,7 @@
         <div id="performance-assumptions" class="performance-assumptions muted"></div>
         <div class="panel-heading performance-holdings-heading">
           <h3>Per-Holding Returns (Stocks And ETFs)</h3>
+          <span class="caption">Click a column header to sort</span>
           <span id="holding-performance-caption" class="caption"></span>
         </div>
         <div id="holding-performance-table" class="table-wrap"></div>
@@ -126,6 +129,7 @@
             <button id="show-plotly-charts" class="toggle-button" type="button">Plotly</button>
           </div>
         </div>
+        <div class="chart-order-hint muted">Order: Portfolio Trend, Transactions Trend, Allocation, Country Exposure</div>
         <div id="chart-grid" class="chart-grid"></div>
       </section>
 
@@ -166,10 +170,12 @@
     </main>
 
     <footer class="app-footer">
-      <a class="button-link secondary-link" href="{{ url_for('debug_console') }}">Debug Console</a>
-      <a class="button-link secondary-link" href="{{ url_for('application_testing') }}">Application Testing</a>
+      <a class="utility-link" href="{{ url_for('debug_console') }}">Debug Console</a>
+      <a class="utility-link" href="{{ url_for('application_testing') }}">Application Testing</a>
     </footer>
+    <button id="back-to-top" class="back-to-top" type="button" hidden>Back To Top</button>
 
     <script src="{{ url_for('static', filename='app.js', v=static_version) }}"></script>
+    <script src="{{ url_for('static', filename='back_to_top.js', v=static_version) }}"></script>
   </body>
 </html>

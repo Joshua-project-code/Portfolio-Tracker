@@ -337,7 +337,7 @@ def save_seaborn_position_distribution_pie_chart(
     filename_prefix: str,
     output_path: Path,
 ) -> None:
-    """Save currency-separated pie charts using Seaborn styling and palettes."""
+    """Save one Seaborn pie chart file per currency."""
     if positions_df.empty:
         print(f"No investment position data found. Skipping Seaborn {chart_title.lower()} chart.")
         return
@@ -348,9 +348,6 @@ def save_seaborn_position_distribution_pie_chart(
     import seaborn as sns
 
     ensure_folder_exists(output_path)
-    chart_file = output_path / f"seaborn_{filename_prefix}_{date.today().isoformat()}.png"
-    action = "Overwriting existing" if chart_file.exists() else "Creating new"
-
     chart_positions = positions_df.copy()
     chart_positions["market_value"] = pd.to_numeric(
         chart_positions["market_value"], errors="coerce"
@@ -376,29 +373,23 @@ def save_seaborn_position_distribution_pie_chart(
         },
     )
     currencies = totals["currency"].dropna().unique()
-    currency_chart_data = []
-    legend_labels = []
     for currency in currencies:
         currency_totals = totals[totals["currency"] == currency]
         currency_totals = aggregate_small_pie_slices(
             currency_totals, category_column, "market_value", threshold=0.10
         )
-        currency_chart_data.append((currency, currency_totals))
-        for label in currency_totals[category_column].astype(str):
-            if label not in legend_labels:
-                legend_labels.append(label)
+        if currency_totals.empty:
+            continue
 
-    fig_width = max(14, 7.2 * len(currencies) + 3.0)
-    fig_height = max(8.5, 6.6 + len(legend_labels) * 0.28)
-    fig, axes = plt.subplots(1, len(currencies), figsize=(fig_width, fig_height))
-    if len(currencies) == 1:
-        axes = [axes]
-    fig.subplots_adjust(left=0.05, right=0.72, top=0.82, bottom=0.08, wspace=0.28)
-
-    palette = sns.color_palette("Set2", n_colors=max(len(legend_labels), 1))
-    color_by_label = dict(zip(legend_labels, palette))
-
-    for axis, (currency, currency_totals) in zip(axes, currency_chart_data):
+        chart_file = output_path / (
+            f"seaborn_{filename_prefix}_{currency}_{date.today().isoformat()}.png"
+        )
+        action = "Overwriting existing" if chart_file.exists() else "Creating new"
+        legend_labels = currency_totals[category_column].astype(str).tolist()
+        palette = sns.color_palette("Set2", n_colors=max(len(legend_labels), 1))
+        color_by_label = dict(zip(legend_labels, palette))
+        fig_height = max(8.0, 6.6 + len(legend_labels) * 0.24)
+        fig, axis = plt.subplots(figsize=(10.5, fig_height))
         colors = [
             color_by_label[str(label)]
             for label in currency_totals[category_column].astype(str)
@@ -412,31 +403,29 @@ def save_seaborn_position_distribution_pie_chart(
             colors=colors,
             textprops={"fontsize": CHART_FONTS["pie_percent"]},
         )
-        axis.set_title(f"{currency}", fontsize=CHART_FONTS["subtitle"], pad=14, weight="semibold")
+        axis.set_title(f"{chart_title} - {currency}", fontsize=CHART_FONTS["title"], pad=14, weight="semibold")
         axis.set_aspect("equal")
-
-    fig.suptitle(chart_title, fontsize=CHART_FONTS["title"], weight="semibold")
-    legend_handles = [
-        Patch(facecolor=color_by_label[label], label=label)
-        for label in legend_labels
-    ]
-    fig.legend(
-        handles=legend_handles,
-        title=category_column.replace("_", " ").title(),
-        loc="center left",
-        bbox_to_anchor=(0.75, 0.5),
-        fontsize=CHART_FONTS["legend"],
-        title_fontsize=CHART_FONTS["legend_title"],
-        ncol=1,
-        frameon=True,
-        borderpad=0.8,
-        labelspacing=0.6,
-        columnspacing=1.4,
-    )
-    plt.savefig(chart_file, dpi=150)
-    plt.close()
-
-    print(f"{action} seaborn {chart_title.lower()} chart: {chart_file}")
+        legend_handles = [
+            Patch(facecolor=color_by_label[label], label=label)
+            for label in legend_labels
+        ]
+        fig.legend(
+            handles=legend_handles,
+            title=category_column.replace("_", " ").title(),
+            loc="center left",
+            bbox_to_anchor=(0.78, 0.5),
+            fontsize=CHART_FONTS["legend"],
+            title_fontsize=CHART_FONTS["legend_title"],
+            ncol=1,
+            frameon=True,
+            borderpad=0.8,
+            labelspacing=0.6,
+            columnspacing=1.4,
+        )
+        fig.subplots_adjust(left=0.05, right=0.74, top=0.86, bottom=0.08)
+        plt.savefig(chart_file, dpi=150)
+        plt.close()
+        print(f"{action} seaborn {chart_title.lower()} chart: {chart_file}")
 
 
 def save_plotly_position_distribution_pie_chart(
@@ -446,17 +435,14 @@ def save_plotly_position_distribution_pie_chart(
     filename_prefix: str,
     output_path: Path,
 ) -> None:
-    """Save currency-separated Plotly pie charts as an HTML file."""
+    """Save one Plotly pie chart HTML file per currency."""
     if positions_df.empty:
         print(f"No investment position data found. Skipping Plotly {chart_title.lower()} chart.")
         return
 
     import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
 
     ensure_folder_exists(output_path)
-    chart_file = output_path / f"plotly_{filename_prefix}_{date.today().isoformat()}.html"
-    action = "Overwriting existing" if chart_file.exists() else "Creating new"
 
     chart_positions = positions_df.copy()
     chart_positions["market_value"] = pd.to_numeric(
@@ -475,50 +461,46 @@ def save_plotly_position_distribution_pie_chart(
         return
 
     currencies = totals["currency"].dropna().unique()
-    figure = make_subplots(
-        rows=1,
-        cols=len(currencies),
-        specs=[[{"type": "domain"} for _ in currencies]],
-        subplot_titles=[str(currency) for currency in currencies],
-    )
-    for index, currency in enumerate(currencies, start=1):
+    for currency in currencies:
         currency_totals = totals[totals["currency"] == currency]
         currency_totals = aggregate_small_pie_slices(
             currency_totals, category_column, "market_value", threshold=0.10
         )
-        figure.add_trace(
+        if currency_totals.empty:
+            continue
+        chart_file = output_path / (
+            f"plotly_{filename_prefix}_{currency}_{date.today().isoformat()}.html"
+        )
+        action = "Overwriting existing" if chart_file.exists() else "Creating new"
+        figure = go.Figure(
             go.Pie(
                 labels=currency_totals[category_column],
                 values=currency_totals["market_value"],
                 name=str(currency),
                 textinfo="label+percent",
                 hovertemplate="%{label}<br>%{value:,.2f}<br>%{percent}<extra></extra>",
-            ),
-            row=1,
-            col=index,
+            )
         )
-
-    figure.update_layout(
-        title_text=chart_title,
-        template="plotly_white",
-        height=720,
-        font={"family": PLOTLY_FONT_FAMILY, "size": 13, "color": "#1f2933"},
-        title={"font": {"size": 22}, "x": 0.02, "xanchor": "left"},
-        showlegend=True,
-        legend={
-            "orientation": "v",
-            "x": 1.02,
-            "y": 1,
-            "xanchor": "left",
-            "yanchor": "top",
-            "font": {"size": 12},
-            "title": {"font": {"size": 13}},
-        },
-        margin={"t": 80, "b": 90, "l": 60, "r": 260},
-    )
-    figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
-
-    print(f"{action} plotly {chart_title.lower()} chart: {chart_file}")
+        figure.update_layout(
+            title_text=f"{chart_title} - {currency}",
+            template="plotly_white",
+            height=700,
+            font={"family": PLOTLY_FONT_FAMILY, "size": 13, "color": "#1f2933"},
+            title={"font": {"size": 22}, "x": 0.02, "xanchor": "left"},
+            showlegend=True,
+            legend={
+                "orientation": "v",
+                "x": 1.02,
+                "y": 1,
+                "xanchor": "left",
+                "yanchor": "top",
+                "font": {"size": 12},
+                "title": {"font": {"size": 13}},
+            },
+            margin={"t": 80, "b": 90, "l": 60, "r": 260},
+        )
+        figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
+        print(f"{action} plotly {chart_title.lower()} chart: {chart_file}")
 
 
 def aggregate_small_pie_slices(

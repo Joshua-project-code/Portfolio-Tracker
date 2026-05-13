@@ -59,16 +59,12 @@ OUTPUT_CSV_PATTERNS = [
 SEABORN_CHART_PATTERNS = [
     "seaborn_investment_positions_by_month_{today}.png",
     "seaborn_transactions_by_month_{today}.png",
-    "seaborn_sector_distribution_{today}.png",
-    "seaborn_geography_distribution_{today}.png",
     "country_exposure_pie_SGD_{today}.png",
     "country_exposure_pie_USD_{today}.png",
 ]
 PLOTLY_CHART_PATTERNS = [
     "plotly_investment_positions_by_month_{today}.html",
     "plotly_transactions_by_month_{today}.html",
-    "plotly_sector_distribution_{today}.html",
-    "plotly_geography_distribution_{today}.html",
 ]
 
 
@@ -337,6 +333,30 @@ def get_generated_chart_sets(today: str) -> dict[str, list[str]]:
     plotly_charts = [
         name for name in plotly_chart_names if (DEFAULT_OUTPUT_PATH / name).exists()
     ]
+    seaborn_charts.extend(
+        sorted(
+            path.name
+            for path in DEFAULT_OUTPUT_PATH.glob(f"seaborn_sector_distribution_*_{today}.png")
+        )
+    )
+    seaborn_charts.extend(
+        sorted(
+            path.name
+            for path in DEFAULT_OUTPUT_PATH.glob(f"seaborn_geography_distribution_*_{today}.png")
+        )
+    )
+    plotly_charts.extend(
+        sorted(
+            path.name
+            for path in DEFAULT_OUTPUT_PATH.glob(f"plotly_sector_distribution_*_{today}.html")
+        )
+    )
+    plotly_charts.extend(
+        sorted(
+            path.name
+            for path in DEFAULT_OUTPUT_PATH.glob(f"plotly_geography_distribution_*_{today}.html")
+        )
+    )
     return {
         "seaborn": seaborn_charts,
         "plotly": plotly_charts,

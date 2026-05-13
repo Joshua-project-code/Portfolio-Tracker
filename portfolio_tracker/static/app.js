@@ -12,6 +12,8 @@ const uploadForm = document.querySelector("#upload-form");
 const uploadSubmitButton = document.querySelector("#upload-submit");
 const uploadMessage = document.querySelector("#upload-message");
 const statusText = document.querySelector("#status-text");
+const appNotice = document.querySelector("#app-notice");
+const adminModeBadge = document.querySelector("#admin-mode-badge");
 let currentChartMode = "seaborn";
 let currentChartSets = {
   seaborn: [],
@@ -27,6 +29,13 @@ const CONSOLE_OUTPUT_STORAGE_KEY = "portfolio_tracker_console_output";
 const ADMIN_MODE_CODE = "ADMIN";
 let isAdminModeEnabled = false;
 
+function setAdminModeUiState(enabled) {
+  isAdminModeEnabled = enabled;
+  adminModePanel.hidden = !enabled;
+  adminModeBadge.hidden = !enabled;
+  adminModeToggleButton.textContent = enabled ? "Admin Mode Enabled" : "Admin Mode";
+}
+
 function setConsoleOutput(message) {
   const text = message || DEFAULT_CONSOLE_MESSAGE;
   try {
@@ -34,6 +43,21 @@ function setConsoleOutput(message) {
   } catch (_error) {
     // Best effort only; continue rendering without local persistence.
   }
+}
+
+function setNotice(message, kind = "info") {
+  if (!appNotice) {
+    return;
+  }
+  if (!message) {
+    appNotice.hidden = true;
+    appNotice.textContent = "";
+    appNotice.className = "notice-row";
+    return;
+  }
+  appNotice.hidden = false;
+  appNotice.textContent = message;
+  appNotice.className = `notice-row ${kind}`;
 }
 
 function formatPercentage(value) {
@@ -159,10 +183,16 @@ function renderHoldingPerformanceTable(rows = []) {
   columns.forEach((column) => {
     const heading = document.createElement("th");
     heading.classList.add("sortable-header");
+    heading.setAttribute("scope", "col");
+    heading.setAttribute("tabindex", "0");
     const isCurrentSort = holdingPerformanceSort.column === column.key;
     const sortSuffix = isCurrentSort ? (holdingPerformanceSort.direction === "asc" ? " \u2191" : " \u2193") : "";
+    heading.setAttribute(
+      "aria-sort",
+      isCurrentSort ? (holdingPerformanceSort.direction === "asc" ? "ascending" : "descending") : "none"
+    );
     heading.textContent = `${column.label}${sortSuffix}`;
-    heading.addEventListener("click", () => {
+    const sortColumn = () => {
       if (holdingPerformanceSort.column === column.key) {
         holdingPerformanceSort.direction = holdingPerformanceSort.direction === "asc" ? "desc" : "asc";
       } else {
@@ -170,6 +200,13 @@ function renderHoldingPerformanceTable(rows = []) {
         holdingPerformanceSort.direction = column.key === "stock_code" || column.key === "stock_name" ? "asc" : "desc";
       }
       renderHoldingPerformanceTable(rows);
+    };
+    heading.addEventListener("click", sortColumn);
+    heading.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        sortColumn();
+      }
     });
     headRow.appendChild(heading);
   });
@@ -230,6 +267,57 @@ function chartSortValue(chart) {
     return 6;
   }
   return 99;
+}
+
+function chartGroupName(chart) {
+  const chartName = String(chart).toLowerCase();
+  if (chartName.includes("investment_positions_by_month")) {
+    return "Portfolio Trend";
+  }
+  if (chartName.includes("transactions_by_month")) {
+    return "Transactions Trend";
+  }
+  if (chartName.includes("sector_distribution") || chartName.includes("geography_distribution")) {
+    return "Allocation";
+  }
+  if (chartName.includes("country_exposure_pie")) {
+    return "Country Exposure";
+  }
+  return "Other";
+}
+
+function chartDisplayName(chart) {
+  const chartName = String(chart).toLowerCase();
+  const chartFile = String(chart);
+  const extractCurrency = (prefix, extension) => {
+    const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const escapedExt = extension.replace(".", "\\.");
+    const match = chartFile.match(new RegExp(`^${escapedPrefix}_([A-Za-z0-9]+)_\\d{4}-\\d{2}-\\d{2}\\.${escapedExt}$`, "i"));
+    return match ? match[1].toUpperCase() : "";
+  };
+  if (chartName.includes("investment_positions_by_month")) {
+    return "Portfolio Value by Month";
+  }
+  if (chartName.includes("transactions_by_month")) {
+    return "Transactions by Month";
+  }
+  if (chartName.includes("sector_distribution")) {
+    const currency = extractCurrency("seaborn_sector_distribution", "png")
+      || extractCurrency("plotly_sector_distribution", "html");
+    return currency ? `Sector Distribution (${currency})` : "Sector Distribution";
+  }
+  if (chartName.includes("geography_distribution")) {
+    const currency = extractCurrency("seaborn_geography_distribution", "png")
+      || extractCurrency("plotly_geography_distribution", "html");
+    return currency ? `Geography Distribution (${currency})` : "Geography Distribution";
+  }
+  if (chartName.includes("country_exposure_pie_sgd")) {
+    return "Country Exposure (SGD)";
+  }
+  if (chartName.includes("country_exposure_pie_usd")) {
+    return "Country Exposure (USD)";
+  }
+  return displayName(chart);
 }
 
 function formatDisplayValue(tableId, column, value) {
@@ -348,30 +436,42 @@ function renderCharts(charts, cacheKey) {
   }
 
   grid.className = "chart-grid";
+  let previousGroup = "";
   [...charts].sort((left, right) => chartSortValue(left) - chartSortValue(right)).forEach((chart) => {
+    const group = chartGroupName(chart);
+    if (group !== previousGroup) {
+      const groupHeading = document.createElement("div");
+      groupHeading.className = "chart-group-title";
+      groupHeading.textContent = group;
+      grid.appendChild(groupHeading);
+      previousGroup = group;
+    }
     const figure = document.createElement("figure");
+    if (group === "Portfolio Trend" || group === "Transactions Trend") {
+      figure.classList.add("chart-wide");
+    }
     const caption = document.createElement("figcaption");
     if (chart.toLowerCase().endsWith(".html")) {
       const frame = document.createElement("iframe");
       frame.src = outputUrl(chart, cacheKey);
-      frame.title = displayName(chart);
+      frame.title = chartDisplayName(chart);
       frame.loading = "lazy";
       frame.onerror = () => {
         figure.classList.add("chart-error");
-        caption.textContent = `${chart} could not be loaded`;
+        caption.textContent = `${chartDisplayName(chart)} could not be loaded`;
       };
       figure.appendChild(frame);
     } else {
       const image = document.createElement("img");
       image.src = outputUrl(chart, cacheKey);
-      image.alt = displayName(chart);
+      image.alt = chartDisplayName(chart);
       image.onerror = () => {
         figure.classList.add("chart-error");
-        caption.textContent = `${chart} could not be loaded`;
+        caption.textContent = `${chartDisplayName(chart)} could not be loaded`;
       };
       figure.appendChild(image);
     }
-    caption.textContent = chart;
+    caption.textContent = chartDisplayName(chart);
     figure.appendChild(caption);
     grid.appendChild(figure);
   });
@@ -451,11 +551,13 @@ function clearScreen() {
   document.querySelector("#position-caption").textContent = "";
   setConsoleOutput(DEFAULT_CONSOLE_MESSAGE);
   setStatus("Ready");
+  setNotice("Cleared all on-screen data.", "info");
 }
 
 async function deleteFiles(endpoint, runningStatus, successMessage, afterDelete = null) {
   setButtonsDisabled(true);
   setStatus(runningStatus);
+  setNotice(runningStatus, "info");
 
   try {
     const response = await fetch(endpoint, { method: "POST" });
@@ -474,13 +576,16 @@ async function deleteFiles(endpoint, runningStatus, successMessage, afterDelete 
         `${statusMessage} ${failedCount} file(s) could not be deleted because they are still in use. Close the file or restart the app, then try again.`
       );
       setStatus("Partial");
+      setNotice("Action partially completed. Some files are still in use.", "warn");
     } else {
       setConsoleOutput(statusMessage);
       setStatus("Complete");
+      setNotice(statusMessage, "success");
     }
   } catch (error) {
     setStatus("Failed");
     setConsoleOutput(error.message);
+    setNotice(error.message, "error");
   } finally {
     setButtonsDisabled(false);
   }
@@ -490,6 +595,7 @@ async function runReport() {
   setButtonsDisabled(true);
   setStatus("Running");
   setConsoleOutput("Running report...");
+  setNotice("Running report...", "info");
 
   try {
     const response = await fetch("/api/run-report");
@@ -523,9 +629,11 @@ async function runReport() {
       `Showing ${data.positions.rows.length} row(s)`;
     setConsoleOutput(data.console_output || "No console output was produced.");
     setStatus("Complete");
+    setNotice("Report completed successfully.", "success");
   } catch (error) {
     setStatus("Failed");
     setConsoleOutput(error.message);
+    setNotice(error.message, "error");
   } finally {
     setButtonsDisabled(false);
   }
@@ -543,6 +651,7 @@ async function uploadFiles(event) {
   setButtonsDisabled(true);
   setStatus("Uploading");
   uploadMessage.textContent = "Uploading files...";
+  setNotice("Uploading files...", "info");
 
   try {
     const response = await fetch("/api/upload-files", {
@@ -555,11 +664,13 @@ async function uploadFiles(event) {
     }
 
     uploadMessage.textContent = formatUploadResult(data);
+    setNotice(uploadMessage.textContent, "success");
     uploadForm.reset();
     await runReport();
   } catch (error) {
     setStatus("Upload failed");
     uploadMessage.textContent = error.message;
+    setNotice(error.message, "error");
   } finally {
     setButtonsDisabled(false);
   }
@@ -570,9 +681,9 @@ showUploadButton.addEventListener("click", () => {
 });
 adminModeToggleButton?.addEventListener("click", () => {
   if (isAdminModeEnabled) {
-    isAdminModeEnabled = false;
-    adminModePanel.hidden = true;
-    adminModeToggleButton.textContent = "Admin Mode";
+    setAdminModeUiState(false);
+    adminModeBadge.hidden = true;
+    setNotice("Admin mode disabled.", "info");
     return;
   }
 
@@ -582,12 +693,11 @@ adminModeToggleButton?.addEventListener("click", () => {
     return;
   }
 
-  isAdminModeEnabled = true;
-  if (adminModePanel.hidden) {
-    adminModePanel.hidden = false;
+  setAdminModeUiState(true);
+  if (!adminModePanel.hidden) {
     adminModePanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-  adminModeToggleButton.textContent = "Admin Mode Enabled";
+  setNotice("Admin mode enabled. Destructive actions are now available.", "warn");
 });
 runButton.addEventListener("click", runReport);
 showSeabornChartsButton.addEventListener("click", () => {
@@ -640,4 +750,7 @@ clearScreenButton.addEventListener("click", () => {
   clearScreen();
 });
 uploadForm.addEventListener("submit", uploadFiles);
-document.addEventListener("DOMContentLoaded", runReport);
+document.addEventListener("DOMContentLoaded", () => {
+  setAdminModeUiState(false);
+  runReport();
+});
