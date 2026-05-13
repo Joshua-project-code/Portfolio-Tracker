@@ -58,7 +58,7 @@ Portfolio Tracker/
 |   +-- templates/                  # Flask templates
 |   +-- performance_metrics.py      # Portfolio return calculations
 +-- data/
-|   +-- stock_mapping.csv           # Editable sector/geography mapping
+|   +-- stock_mapping.csv           # Editable stock-code sector/geography mapping
 |   +-- etf_country_matrix.csv      # Editable country exposure percentage matrix
 |   +-- stock_code_mapping.csv      # Persisted generated stock-code/name history
 +-- docs/
@@ -85,7 +85,7 @@ report artifacts should not be committed:
 - `../Output/country_exposure_pie_USD_YYYY-MM-DD.png`
 - `../Output/plotly_*.html` interactive Plotly chart files
 
-The committed editable sector/geography mapping is `data/stock_mapping.csv`.
+The committed editable stock-code sector/geography mapping is `data/stock_mapping.csv`.
 The persisted generated stock-code/name history is `data/stock_code_mapping.csv`;
 it can be committed so future runs can recover known stock codes from current or
 historical broker names.

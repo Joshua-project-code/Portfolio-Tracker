@@ -17,7 +17,7 @@ This file lists DataFrames created during the Portfolio Tracker runtime workflow
 - `country_exposure_totals_df`: Country totals by currency.
 - `monthly_totals_df`: Monthly position totals for line charts.
 - `monthly_transactions_df`: Monthly transaction totals for line charts.
-- `stock_mapping_df`: User-provided stock mapping (`sector`, `geography`).
+- `stock_mapping_df`: User-provided stock-code mapping (`sector`, `geography`).
 - `mapped_positions_df`: Positions enriched with `sector` and `geography`.
 - `table` (`dataframe_table`): Copy of input dataframe for JSON-safe serialization.
 

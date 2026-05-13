@@ -42,6 +42,8 @@ Acceptance criteria:
 - Long broker filename lists are capped visually and can be scrolled when more
   than about five files are loaded.
 - The web app shows user-friendly errors if report generation fails.
+- Sector/geography chart enrichment uses `data/stock_mapping.csv` keyed by
+  immutable `stock_code`.
 
 ### US-003 Review Transaction And Position Tables
 

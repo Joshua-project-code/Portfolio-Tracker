@@ -134,6 +134,10 @@ The `Output CSV Files` section links to generated CSV files, including:
 `stock_code_mapping.csv` is stored in the project `data` folder and records the
 latest stock-code/name mapping discovered from broker files.
 
+`data/stock_mapping.csv` is the editable classification file used for chart
+enrichment and is keyed by immutable `stock_code` with `sector` and
+`geography` columns.
+
 ### Country Exposure Data
 
 Country exposure is controlled by `data/etf_country_matrix.csv`.
