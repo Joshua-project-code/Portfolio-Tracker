@@ -111,7 +111,7 @@ def build_country_exposure_totals_dataframe(
 def save_country_exposure_pie_charts(
     country_totals_df: pd.DataFrame,
     output_path: Path,
-    max_slices: int = 5,
+    max_slices: int = 6,
     generated_on: str | None = None,
 ) -> None:
     """Save one country exposure pie chart per currency."""
@@ -185,7 +185,7 @@ def save_country_exposure_pie_charts(
 
 def aggregate_country_totals_for_pie(
     country_totals_df: pd.DataFrame,
-    max_slices: int = 5,
+    max_slices: int = 6,
 ) -> pd.DataFrame:
     """Keep top country slices and aggregate the rest into Others."""
     if country_totals_df.empty:
