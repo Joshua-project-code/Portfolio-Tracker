@@ -309,6 +309,10 @@ def calculate_holding_performance_metrics(
     positions["currency"] = positions["currency"].fillna("").astype(str).str.strip().str.upper()
     positions["market_value"] = pd.to_numeric(positions["market_value"], errors="coerce").fillna(0.0)
     positions["total_cost"] = pd.to_numeric(positions.get("total_cost", 0.0), errors="coerce").fillna(0.0)
+    if "quantity" in positions.columns:
+        positions["quantity"] = pd.to_numeric(positions["quantity"], errors="coerce").fillna(0.0)
+    else:
+        positions["quantity"] = 0.0
     positions = positions[(positions["stock_name"] != "") | (positions["stock_code"] != "")]
     if positions.empty:
         return []
@@ -318,9 +322,15 @@ def calculate_holding_performance_metrics(
     positions.loc[missing_code_mask, "holding_key"] = (
         "__NAME__" + positions.loc[missing_code_mask, "stock_name"].str.upper()
     )
+    # Use position-derived name mapping to align transactions with missing stock codes.
+    name_to_holding_key = {
+        str(row.stock_name).upper(): str(row.holding_key)
+        for row in positions[["stock_name", "holding_key"]].itertuples(index=False)
+        if str(row.stock_name).strip()
+    }
     grouped_positions = (
         positions.groupby(["holding_key", "stock_code", "stock_name", "currency"], as_index=False)[
-            ["market_value", "total_cost"]
+            ["market_value", "total_cost", "quantity"]
         ]
         .sum()
     )
@@ -352,23 +362,30 @@ def calculate_holding_performance_metrics(
         transactions["transaction_amount"] = pd.to_numeric(
             transactions["transaction_amount"], errors="coerce"
         )
+        transactions["units"] = pd.to_numeric(transactions.get("units", 0.0), errors="coerce")
         transaction_type = transactions["transaction_type"].astype(str).str.strip().str.lower()
         transactions = transactions.dropna(subset=["transaction_date", "transaction_amount"])
         transactions["cash_flow"] = transactions["transaction_amount"]
+        transactions["signed_units"] = transactions["units"].fillna(0.0)
         buy_mask = transaction_type.eq("buy")
         sell_mask = transaction_type.eq("sell")
         transactions.loc[buy_mask, "cash_flow"] = -transactions.loc[buy_mask, "transaction_amount"].abs()
         transactions.loc[sell_mask, "cash_flow"] = transactions.loc[sell_mask, "transaction_amount"].abs()
+        transactions.loc[buy_mask, "signed_units"] = transactions.loc[buy_mask, "units"].abs()
+        transactions.loc[sell_mask, "signed_units"] = -transactions.loc[sell_mask, "units"].abs()
 
         transactions["holding_key"] = transactions["stock_code"]
         missing_tx_code_mask = transactions["holding_key"] == ""
         transactions.loc[missing_tx_code_mask, "holding_key"] = (
-            "__NAME__" + transactions.loc[missing_tx_code_mask, "stock_name"].str.upper()
+            transactions.loc[missing_tx_code_mask, "stock_name"]
+            .str.upper()
+            .map(name_to_holding_key)
+            .fillna("__NAME__" + transactions.loc[missing_tx_code_mask, "stock_name"].str.upper())
         )
         holding_flows = (
             transactions.groupby(
                 ["holding_key", "price_currency", "transaction_date"], as_index=False
-            )["cash_flow"]
+            )[["cash_flow", "signed_units"]]
             .sum()
             .rename(columns={"price_currency": "currency"})
             .sort_values(["holding_key", "currency", "transaction_date"], ignore_index=True)
@@ -380,6 +397,7 @@ def calculate_holding_performance_metrics(
         currency = str(holding["currency"])
         ending_value = float(holding["market_value"])
         cost_basis = float(holding["total_cost"])
+        current_quantity = float(holding.get("quantity", 0.0))
         flow_rows = holding_flows[
             (holding_flows["holding_key"] == holding_key)
             & (holding_flows["currency"] == currency)
@@ -398,6 +416,25 @@ def calculate_holding_performance_metrics(
             total_inflows=total_inflows,
         )
         assumed_initial_outflow = float(assumption["amount"])
+        # If transaction units fully cover the current shares, treat history as complete
+        # for holding-level assumptions even if cash totals differ due to fees/rounding.
+        net_tracked_units = float(flow_rows.get("signed_units", pd.Series(dtype="float64")).sum())
+        has_unit_coverage = (not flow_rows.empty) and (current_quantity > 0) and (net_tracked_units >= current_quantity - 1e-8)
+        if has_unit_coverage:
+            assumed_initial_outflow = 0.0
+        assumption_debug = (
+            f"Flagged because inferred missing initial {currency} {float(assumption['amount']):,.2f} > 0. "
+            f"Cost basis={currency} {cost_basis:,.2f}, observed buy outflows={currency} {total_outflows:,.2f}, "
+            f"observed sell inflows={currency} {total_inflows:,.2f}, net tracked units={net_tracked_units:,.6f}, "
+            f"current quantity={current_quantity:,.6f}, inferred date={pd.Timestamp(assumption['date']).date().isoformat()} "
+            f"({assumption['date_source']})."
+            if assumed_initial_outflow > 0
+            else (
+                "Not flagged: holding history treated as complete."
+                if has_unit_coverage
+                else "Not flagged: inferred missing initial investment is zero."
+            )
+        )
         adjusted_outflows = total_outflows + assumed_initial_outflow
         simple_return = None
         if adjusted_outflows > 0:
@@ -458,6 +495,7 @@ def calculate_holding_performance_metrics(
                     if assumed_initial_outflow > 0
                     else ""
                 ),
+                "assumption_debug": assumption_debug,
             }
         )
 
@@ -473,7 +511,9 @@ def build_missing_history_assumption(
     total_inflows: float,
 ) -> dict[str, object]:
     """Infer any missing starting capital from available position and flow data."""
-    missing_cost_basis = max(cost_basis + total_inflows - total_outflows, 0.0)
+    # Missing-history inference is based on uncovered current cost basis only.
+    # Realized sell inflows should not increase inferred missing starting capital.
+    missing_cost_basis = max(cost_basis - total_outflows, 0.0)
     assumption_date, date_source = infer_assumed_initial_flow_date(
         currency_flows, currency_valuations
     )

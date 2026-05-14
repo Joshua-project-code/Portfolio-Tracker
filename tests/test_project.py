@@ -52,6 +52,7 @@ from portfolio_tracker.interactive_brokers_parser import (
 from portfolio_tracker.output_helpers import save_dataframe_to_csv, save_dataframes_to_csv
 from portfolio_tracker.parse_broker_reports import get_user_friendly_error_message
 from portfolio_tracker.performance_metrics import (
+    calculate_holding_performance_metrics,
     calculate_portfolio_performance_metrics,
     calculate_time_weighted_return,
 )
@@ -1249,6 +1250,87 @@ class ReportRunnerTests(unittest.TestCase):
                 "by_currency": {},
             },
         )
+
+    def test_calculate_holding_performance_metrics_leaves_assumption_blank_for_complete_history(self) -> None:
+        transactions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp", "Acme Corp"],
+                "stock_code": ["ACME", "ACME"],
+                "price_currency": ["USD", "USD"],
+                "transaction_date": [pd.Timestamp("2025-01-10"), pd.Timestamp("2025-03-10")],
+                "transaction_amount": [1000.0, 300.0],
+                "transaction_type": ["buy", "sell"],
+            }
+        )
+        positions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp"],
+                "stock_code": ["ACME"],
+                "currency": ["USD"],
+                "market_value": [800.0],
+                "total_cost": [700.0],
+            }
+        )
+
+        rows = calculate_holding_performance_metrics(transactions, positions)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["assumption_note"], "")
+
+    def test_calculate_holding_performance_metrics_matches_blank_transaction_codes_by_name(self) -> None:
+        transactions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp", "Acme Corp"],
+                "stock_code": ["", ""],
+                "price_currency": ["USD", "USD"],
+                "transaction_date": [pd.Timestamp("2025-01-10"), pd.Timestamp("2025-03-10")],
+                "transaction_amount": [1000.0, 300.0],
+                "transaction_type": ["buy", "sell"],
+            }
+        )
+        positions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp"],
+                "stock_code": ["ACME"],
+                "currency": ["USD"],
+                "market_value": [800.0],
+                "total_cost": [700.0],
+            }
+        )
+
+        rows = calculate_holding_performance_metrics(transactions, positions)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["stock_code"], "ACME")
+        self.assertEqual(rows[0]["assumption_note"], "")
+
+    def test_calculate_holding_performance_metrics_uses_unit_coverage_to_clear_assumption(self) -> None:
+        transactions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp"],
+                "stock_code": ["ACME"],
+                "price_currency": ["USD"],
+                "transaction_date": [pd.Timestamp("2025-01-10")],
+                "transaction_amount": [1000.0],
+                "transaction_type": ["buy"],
+                "units": [10.0],
+            }
+        )
+        positions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp"],
+                "stock_code": ["ACME"],
+                "currency": ["USD"],
+                "quantity": [10.0],
+                "market_value": [1200.0],
+                "total_cost": [1010.0],
+            }
+        )
+
+        rows = calculate_holding_performance_metrics(transactions, positions)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["assumption_note"], "")
 
     def test_dataframe_table_serializes_nan_timestamps_and_numpy_scalars(self) -> None:
         table = dataframe_table(

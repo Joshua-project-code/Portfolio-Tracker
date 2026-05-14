@@ -287,6 +287,13 @@ function renderHoldingPerformanceTable(rows = []) {
         cell.textContent = formatPercentage(row[column.key]);
       } else {
         cell.textContent = row[column.key] || "-";
+        if (column.key === "assumption_note") {
+          const debugText = String(row.assumption_debug || "").trim();
+          if (debugText) {
+            cell.title = debugText;
+            cell.classList.add("assumption-tooltip");
+          }
+        }
       }
       bodyRow.appendChild(cell);
     });
