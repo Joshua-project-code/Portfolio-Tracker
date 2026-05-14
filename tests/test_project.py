@@ -1708,6 +1708,13 @@ class ErrorMessageTests(unittest.TestCase):
 
 
 class FlaskAppTests(unittest.TestCase):
+    @staticmethod
+    def csrf_headers(client) -> dict[str, str]:
+        client.get("/")
+        with client.session_transaction() as session:
+            token = session.get(flask_app.CSRF_SESSION_KEY, "")
+        return {"X-CSRF-Token": token}
+
     def test_index_renders_default_paths(self) -> None:
         flask_app.app.config.update(TESTING=True)
         client = flask_app.app.test_client()
@@ -1772,9 +1779,10 @@ class FlaskAppTests(unittest.TestCase):
         }
 
         with patch.object(flask_app, "run_unittest_command", return_value=result) as runner:
-            all_response = client.post("/api/tests/run", json={})
+            headers = self.csrf_headers(client)
+            all_response = client.post("/api/tests/run", json={}, headers=headers)
             one_response = client.post(
-                "/api/tests/run", json={"test_name": "test_example"}
+                "/api/tests/run", json={"test_name": "test_example"}, headers=headers
             )
 
         self.assertEqual(all_response.status_code, 200)
@@ -1804,6 +1812,7 @@ class FlaskAppTests(unittest.TestCase):
             client = flask_app.app.test_client()
 
             with patch.object(flask_app, "UPLOAD_TARGETS", patched_targets):
+                headers = self.csrf_headers(client)
                 response = client.post(
                     "/api/upload-files",
                     data={
@@ -1816,6 +1825,7 @@ class FlaskAppTests(unittest.TestCase):
                         ],
                     },
                     content_type="multipart/form-data",
+                    headers=headers,
                 )
 
             payload = response.get_json()
@@ -1844,10 +1854,12 @@ class FlaskAppTests(unittest.TestCase):
             client = flask_app.app.test_client()
 
             with patch.object(flask_app, "UPLOAD_TARGETS", patched_targets):
+                headers = self.csrf_headers(client)
                 response = client.post(
                     "/api/upload-files",
                     data={"poems_files": [(io.BytesIO(b"text"), "notes.txt")]},
                     content_type="multipart/form-data",
+                    headers=headers,
                 )
 
             payload = response.get_json()
@@ -1870,7 +1882,7 @@ class FlaskAppTests(unittest.TestCase):
 
             with patch.object(flask_app, "DEFAULT_POEMS_PATH", poems_folder):
                 with patch.object(flask_app, "DEFAULT_INTERACTIVE_BROKERS_PATH", ib_folder):
-                    response = client.post("/api/delete-broker-files")
+                    response = client.post("/api/delete-broker-files", headers=self.csrf_headers(client))
 
             payload = response.get_json()
             self.assertEqual(response.status_code, 200)
@@ -1891,7 +1903,7 @@ class FlaskAppTests(unittest.TestCase):
             client = flask_app.app.test_client()
 
             with patch.object(flask_app, "DEFAULT_OUTPUT_PATH", output_folder):
-                response = client.post("/api/delete-output-files")
+                response = client.post("/api/delete-output-files", headers=self.csrf_headers(client))
 
             payload = response.get_json()
             self.assertEqual(response.status_code, 200)
@@ -1936,6 +1948,16 @@ class FlaskAppTests(unittest.TestCase):
                 self.assertIn(b"ACME,Acme Corp", response.data)
             finally:
                 response.close()
+
+    def test_csrf_protects_sensitive_post_endpoints(self) -> None:
+        flask_app.app.config.update(TESTING=True)
+        client = flask_app.app.test_client()
+
+        response = client.post("/api/delete-output-files")
+
+        payload = response.get_json()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(payload["error"], "Invalid or missing CSRF token.")
 
 
 if __name__ == "__main__":

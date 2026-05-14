@@ -167,6 +167,24 @@ main {
   text-transform: uppercase;
 }
 
+#performance-health.status-good {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+#performance-health.status-warn {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+#performance-health.status-neutral {
+  background: #eef2f7;
+  border-color: #cbd5e1;
+  color: #344054;
+}
+
 .status-badge[hidden] {
   display: none !important;
 }
@@ -388,6 +406,20 @@ main {
   z-index: 1100;
 }
 
+.assumption-tooltip-popover .tooltip-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.assumption-tooltip-popover button {
+  background: #374151;
+  font-size: 11px;
+  min-width: 0;
+  padding: 4px 8px;
+}
+
 .chart-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 16px;
@@ -596,6 +628,70 @@ main {
   border-radius: 6px;
   font-size: 13px;
   padding: 8px 10px;
+}
+
+.table-actions {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 10px 16px;
+}
+
+.table-actions button {
+  min-width: 0;
+  padding: 8px 12px;
+}
+
+.run-state-panel {
+  margin-bottom: 16px;
+  margin-top: 0;
+}
+
+.run-stepper {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 16px;
+}
+
+.run-stepper li {
+  background: #f8fafc;
+  border: 1px solid #d7dee3;
+  border-radius: 8px;
+  color: #475467;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.run-stepper li.active {
+  background: #ecfdf3;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.run-stepper li.failed {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.warnings-panel {
+  border-color: #fedf89;
+}
+
+.warning-list {
+  margin: 0;
+  padding: 14px 28px 16px;
+}
+
+.warning-list li {
+  color: #92400e;
+  margin-bottom: 6px;
 }
 
 table {

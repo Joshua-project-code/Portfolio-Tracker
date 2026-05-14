@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Portfolio Tracker</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_version) }}">
   </head>
@@ -54,6 +55,25 @@
         </div>
       </section>
       <section id="app-notice" class="notice-row" aria-live="polite" hidden></section>
+      <section class="panel run-state-panel" aria-live="polite">
+        <div class="panel-heading">
+          <h2>Run Progress</h2>
+          <span id="run-elapsed" class="caption">Elapsed: 0.0s</span>
+        </div>
+        <ol id="run-stepper" class="run-stepper">
+          <li data-step="fetch">Fetching report</li>
+          <li data-step="parse">Parsing and calculations</li>
+          <li data-step="render">Rendering dashboard</li>
+          <li data-step="done">Complete</li>
+        </ol>
+      </section>
+      <section id="run-warnings-panel" class="panel warnings-panel" hidden>
+        <div class="panel-heading">
+          <h2>Run Warnings</h2>
+          <span class="caption">Action needed</span>
+        </div>
+        <ul id="run-warnings-list" class="warning-list"></ul>
+      </section>
 
       <section class="summary-grid">
         <article class="metric">
@@ -93,6 +113,7 @@
       <section class="panel">
         <div class="panel-heading">
           <h2>Portfolio Performance</h2>
+          <span id="performance-health" class="status-badge">Awaiting run</span>
         </div>
         <section class="performance-grid">
           <article class="metric">
@@ -158,6 +179,11 @@
             <option value="compact">Compact rows</option>
           </select>
         </div>
+        <div class="table-actions">
+          <button id="transactions-reset-filters" type="button">Reset Filters</button>
+          <button id="transactions-columns" type="button">Columns</button>
+          <button id="transactions-export-view" type="button">Export Current View</button>
+        </div>
         <div id="transactions-table" class="table-wrap"></div>
       </section>
 
@@ -178,6 +204,11 @@
             <option value="comfortable">Comfortable rows</option>
             <option value="compact">Compact rows</option>
           </select>
+        </div>
+        <div class="table-actions">
+          <button id="positions-reset-filters" type="button">Reset Filters</button>
+          <button id="positions-columns" type="button">Columns</button>
+          <button id="positions-export-view" type="button">Export Current View</button>
         </div>
         <div id="positions-table" class="table-wrap"></div>
       </section>

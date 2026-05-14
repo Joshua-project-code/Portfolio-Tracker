@@ -22,6 +22,16 @@ const positionsBrokerFilter = document.querySelector("#positions-broker-filter")
 const positionsCurrencyFilter = document.querySelector("#positions-currency-filter");
 const rowDensitySelect = document.querySelector("#row-density");
 const positionsRowDensitySelect = document.querySelector("#positions-row-density");
+const runElapsed = document.querySelector("#run-elapsed");
+const runStepper = document.querySelector("#run-stepper");
+const runWarningsPanel = document.querySelector("#run-warnings-panel");
+const runWarningsList = document.querySelector("#run-warnings-list");
+const transactionsResetFiltersButton = document.querySelector("#transactions-reset-filters");
+const positionsResetFiltersButton = document.querySelector("#positions-reset-filters");
+const transactionsExportViewButton = document.querySelector("#transactions-export-view");
+const positionsExportViewButton = document.querySelector("#positions-export-view");
+const transactionsColumnsButton = document.querySelector("#transactions-columns");
+const positionsColumnsButton = document.querySelector("#positions-columns");
 let currentChartMode = "seaborn";
 let currentChartSets = {
   seaborn: [],
@@ -45,6 +55,18 @@ let transactionsData = { columns: [], rows: [], total_rows: 0 };
 let positionsData = { columns: [], rows: [], total_rows: 0 };
 let positionsAsOfDate = "";
 let assumptionTooltipElement = null;
+let assumptionTooltipTarget = null;
+let holdingRowsCurrent = [];
+let filteredTransactionsRows = [];
+let filteredPositionsRows = [];
+let runTimerHandle = null;
+let runStartedAt = 0;
+let columnPickerElement = null;
+const hiddenColumnsByTable = {
+  "transactions-table": new Set(),
+  "positions-table": new Set(),
+};
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
 function ensureAssumptionTooltip() {
   if (assumptionTooltipElement) {
@@ -60,21 +82,108 @@ function ensureAssumptionTooltip() {
   return tooltip;
 }
 
+function ensureColumnPicker() {
+  if (columnPickerElement) {
+    return columnPickerElement;
+  }
+  const picker = document.createElement("div");
+  picker.className = "assumption-tooltip-popover";
+  picker.hidden = true;
+  picker.id = "column-picker";
+  document.body.appendChild(picker);
+  columnPickerElement = picker;
+  return picker;
+}
+
+function hideColumnPicker() {
+  const picker = ensureColumnPicker();
+  picker.hidden = true;
+  picker.innerHTML = "";
+}
+
+function getVisibleColumns(tableId, columns) {
+  const hidden = hiddenColumnsByTable[tableId] || new Set();
+  return columns.filter((column) => !hidden.has(column));
+}
+
+function showColumnPicker(button, tableId, columns) {
+  const picker = ensureColumnPicker();
+  picker.innerHTML = "";
+  const title = document.createElement("div");
+  title.textContent = "Visible Columns";
+  picker.appendChild(title);
+  columns.forEach((column) => {
+    const label = document.createElement("label");
+    label.style.display = "block";
+    label.style.marginTop = "4px";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = !hiddenColumnsByTable[tableId].has(column);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        hiddenColumnsByTable[tableId].delete(column);
+      } else {
+        hiddenColumnsByTable[tableId].add(column);
+      }
+      renderFilteredTables();
+    });
+    label.append(checkbox, ` ${displayName(column)}`);
+    picker.appendChild(label);
+  });
+  const actions = document.createElement("div");
+  actions.className = "tooltip-actions";
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.textContent = "Close";
+  closeButton.addEventListener("click", hideColumnPicker);
+  actions.appendChild(closeButton);
+  picker.appendChild(actions);
+  picker.hidden = false;
+  const rect = button.getBoundingClientRect();
+  picker.style.top = `${window.scrollY + rect.bottom + 8}px`;
+  picker.style.left = `${Math.max(8, window.scrollX + rect.left - 120)}px`;
+}
+
 function hideAssumptionTooltip() {
   const tooltip = ensureAssumptionTooltip();
   tooltip.hidden = true;
-  tooltip.textContent = "";
+  tooltip.innerHTML = "";
+  assumptionTooltipTarget = null;
 }
 
 function showAssumptionTooltip(target, text) {
   const tooltip = ensureAssumptionTooltip();
-  tooltip.textContent = text;
+  assumptionTooltipTarget = target;
+  tooltip.innerHTML = "";
+  const content = document.createElement("div");
+  content.textContent = text;
+  const actions = document.createElement("div");
+  actions.className = "tooltip-actions";
+  const copyButton = document.createElement("button");
+  copyButton.type = "button";
+  copyButton.textContent = "Copy";
+  copyButton.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      copyButton.textContent = "Copied";
+    } catch (_error) {
+      copyButton.textContent = "Copy failed";
+    }
+  });
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.textContent = "Close";
+  closeButton.addEventListener("click", hideAssumptionTooltip);
+  actions.append(copyButton, closeButton);
+  tooltip.append(content, actions);
   tooltip.hidden = false;
   const rect = target.getBoundingClientRect();
-  const top = window.scrollY + rect.top - tooltip.offsetHeight - 8;
+  const preferredTop = window.scrollY + rect.top - tooltip.offsetHeight - 8;
+  const fallbackTop = window.scrollY + rect.bottom + 8;
+  const top = preferredTop > 8 ? preferredTop : fallbackTop;
   const left = window.scrollX + rect.left + rect.width / 2 - tooltip.offsetWidth / 2;
   tooltip.style.top = `${Math.max(8, top)}px`;
-  tooltip.style.left = `${Math.max(8, left)}px`;
+  tooltip.style.left = `${Math.max(8, Math.min(left, window.scrollX + window.innerWidth - tooltip.offsetWidth - 8))}px`;
 }
 
 function setAdminModeUiState(enabled) {
@@ -82,6 +191,16 @@ function setAdminModeUiState(enabled) {
   adminModePanel.hidden = !enabled;
   adminModeBadge.hidden = !enabled;
   adminModeToggleButton.textContent = enabled ? "Admin Mode Enabled" : "Admin Mode";
+}
+
+async function apiFetch(url, options = {}) {
+  const requestOptions = { ...options };
+  requestOptions.headers = { ...(options.headers || {}) };
+  const method = String(requestOptions.method || "GET").toUpperCase();
+  if (method !== "GET" && csrfToken) {
+    requestOptions.headers["X-CSRF-Token"] = csrfToken;
+  }
+  return fetch(url, requestOptions);
 }
 
 function setConsoleOutput(message) {
@@ -176,6 +295,10 @@ function formatPerformanceMetric(performance, key) {
 }
 
 function renderPerformanceMetrics(performance = {}) {
+  const performanceHealth = document.querySelector("#performance-health");
+  if (performanceHealth) {
+    performanceHealth.classList.remove("status-good", "status-warn", "status-neutral");
+  }
   document.querySelector("#annualized-irr").textContent = formatPerformanceMetric(
     performance,
     "annualized_irr"
@@ -199,6 +322,10 @@ function renderPerformanceMetrics(performance = {}) {
   if (!assumptions.length) {
     assumptionPanel.textContent =
       "Assumptions: none. IRR and TWR use the reported transaction history.";
+    if (performanceHealth) {
+      performanceHealth.textContent = "Fresh Data";
+      performanceHealth.classList.add("status-good");
+    }
     return;
   }
 
@@ -212,6 +339,10 @@ function renderPerformanceMetrics(performance = {}) {
   });
 
   assumptionPanel.append(heading, list);
+  if (performanceHealth) {
+    performanceHealth.textContent = "Needs Attention";
+    performanceHealth.classList.add("status-warn");
+  }
 }
 
 function getHoldingSortValue(row, column) {
@@ -251,6 +382,7 @@ function renderHoldingPerformanceTable(rows = []) {
     return;
   }
 
+  holdingRowsCurrent = rows;
   container.className = "table-wrap";
   const columns = holdingPerformanceColumns();
   const sortedRows = [...rows].sort((left, right) => {
@@ -325,9 +457,7 @@ function renderHoldingPerformanceTable(rows = []) {
             cell.classList.add("assumption-tooltip");
             cell.setAttribute("tabindex", "0");
             cell.addEventListener("mouseenter", () => showAssumptionTooltip(cell, debugText));
-            cell.addEventListener("mouseleave", hideAssumptionTooltip);
             cell.addEventListener("focus", () => showAssumptionTooltip(cell, debugText));
-            cell.addEventListener("blur", hideAssumptionTooltip);
             cell.addEventListener("click", () => showAssumptionTooltip(cell, debugText));
           }
         }
@@ -466,6 +596,80 @@ function isNumericColumn(tableId, column) {
 
 function setStatus(message) {
   statusText.textContent = message;
+}
+
+function setRunStep(step, failed = false) {
+  if (!runStepper) {
+    return;
+  }
+  const steps = ["fetch", "parse", "render", "done"];
+  const stepIndex = steps.indexOf(step);
+  runStepper.querySelectorAll("li").forEach((item, index) => {
+    item.classList.remove("active", "failed");
+    if (index <= stepIndex) {
+      item.classList.add("active");
+    }
+    if (failed && index === stepIndex) {
+      item.classList.add("failed");
+    }
+  });
+}
+
+function startRunTimer() {
+  runStartedAt = Date.now();
+  if (runTimerHandle) {
+    window.clearInterval(runTimerHandle);
+  }
+  runTimerHandle = window.setInterval(() => {
+    if (runElapsed) {
+      const elapsed = (Date.now() - runStartedAt) / 1000;
+      runElapsed.textContent = `Elapsed: ${elapsed.toFixed(1)}s`;
+    }
+  }, 100);
+}
+
+function stopRunTimer() {
+  if (runTimerHandle) {
+    window.clearInterval(runTimerHandle);
+    runTimerHandle = null;
+  }
+}
+
+function renderRunWarnings(warnings = []) {
+  if (!runWarningsPanel || !runWarningsList) {
+    return;
+  }
+  runWarningsList.innerHTML = "";
+  if (!warnings.length) {
+    runWarningsPanel.hidden = true;
+    return;
+  }
+  warnings.forEach((warning) => {
+    const item = document.createElement("li");
+    item.textContent = warning;
+    runWarningsList.appendChild(item);
+  });
+  runWarningsPanel.hidden = false;
+}
+
+function exportRowsToCsv(filename, columns, rows) {
+  const escapeCsv = (value) => {
+    const text = String(value ?? "");
+    if (/[",\n]/.test(text)) {
+      return `"${text.replace(/"/g, "\"\"")}"`;
+    }
+    return text;
+  };
+  const csvLines = [
+    columns.map((column) => escapeCsv(column)).join(","),
+    ...rows.map((row) => columns.map((column) => escapeCsv(row[column])).join(",")),
+  ];
+  const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
 }
 
 function setButtonsDisabled(disabled) {
@@ -630,6 +834,7 @@ function renderTable(elementId, tableData) {
   const headRow = document.createElement("tr");
 
   const tableId = container.id;
+  const visibleColumns = getVisibleColumns(tableId, tableData.columns);
   const isPositionsTable = tableId === "positions-table";
   const sortedRows = isPositionsTable
     ? [...(tableData.rows || [])].sort((left, right) => {
@@ -650,7 +855,7 @@ function renderTable(elementId, tableData) {
     })
     : (tableData.rows || []);
 
-  tableData.columns.forEach((column) => {
+  visibleColumns.forEach((column) => {
     const heading = document.createElement("th");
     if (isPositionsTable) {
       heading.classList.add("sortable-header");
@@ -688,7 +893,7 @@ function renderTable(elementId, tableData) {
 
   sortedRows.forEach((row) => {
     const bodyRow = document.createElement("tr");
-    tableData.columns.forEach((column) => {
+    visibleColumns.forEach((column) => {
       const cell = document.createElement("td");
       if (isNumericColumn(container.id, column)) {
         cell.className = "numeric-cell";
@@ -714,30 +919,40 @@ function renderTable(elementId, tableData) {
 }
 
 function renderFilteredTables() {
-  const filteredTransactions = applyFilters(transactionsData, {
+  filteredTransactionsRows = applyFilters(transactionsData, {
     search: transactionsSearchInput?.value || "",
     broker: transactionsBrokerFilter?.value || "",
     currency: transactionsCurrencyFilter?.value || "",
   });
-  const filteredPositions = applyFilters(positionsData, {
+  filteredPositionsRows = applyFilters(positionsData, {
     search: positionsSearchInput?.value || "",
     broker: positionsBrokerFilter?.value || "",
     currency: positionsCurrencyFilter?.value || "",
   });
   renderTable("#transactions-table", {
     columns: transactionsData.columns || [],
-    rows: filteredTransactions,
-    total_rows: filteredTransactions.length,
+    rows: filteredTransactionsRows,
+    total_rows: filteredTransactionsRows.length,
   });
   renderTable("#positions-table", {
     columns: positionsData.columns || [],
-    rows: filteredPositions,
-    total_rows: filteredPositions.length,
+    rows: filteredPositionsRows,
+    total_rows: filteredPositionsRows.length,
   });
+  if ((transactionsData.total_rows || 0) > 0 && filteredTransactionsRows.length === 0) {
+    const transactionsContainer = document.querySelector("#transactions-table");
+    transactionsContainer.textContent = "No rows match current filters.";
+    transactionsContainer.className = "table-wrap muted";
+  }
+  if ((positionsData.total_rows || 0) > 0 && filteredPositionsRows.length === 0) {
+    const positionsContainer = document.querySelector("#positions-table");
+    positionsContainer.textContent = "No rows match current filters.";
+    positionsContainer.className = "table-wrap muted";
+  }
   document.querySelector("#transaction-caption").textContent =
-    `Showing ${filteredTransactions.length} of ${transactionsData.total_rows || 0} row(s)`;
+    `Showing ${filteredTransactionsRows.length} of ${transactionsData.total_rows || 0} row(s)`;
   const rowSummary =
-    `Showing ${filteredPositions.length} of ${positionsData.total_rows || 0} row(s)`;
+    `Showing ${filteredPositionsRows.length} of ${positionsData.total_rows || 0} row(s)`;
   document.querySelector("#position-caption").textContent = positionsAsOfDate
     ? `${rowSummary} | As of ${positionsAsOfDate}`
     : rowSummary;
@@ -765,6 +980,12 @@ function clearScreen() {
   renderTable("#transactions-table", { columns: [], rows: [], total_rows: 0 });
   renderTable("#positions-table", { columns: [], rows: [], total_rows: 0 });
   renderHoldingPerformanceTable([]);
+  const performanceHealth = document.querySelector("#performance-health");
+  if (performanceHealth) {
+    performanceHealth.classList.remove("status-good", "status-warn");
+    performanceHealth.classList.add("status-neutral");
+    performanceHealth.textContent = "Awaiting run";
+  }
 
   document.querySelector("#transaction-caption").textContent = "";
   document.querySelector("#position-caption").textContent = "";
@@ -779,7 +1000,7 @@ async function deleteFiles(endpoint, runningStatus, successMessage, afterDelete 
   setNotice(runningStatus, "info");
 
   try {
-    const response = await fetch(endpoint, { method: "POST" });
+    const response = await apiFetch(endpoint, { method: "POST" });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "The delete request could not complete.");
@@ -815,13 +1036,23 @@ async function runReport() {
   setStatus("Generating report from broker files...");
   setConsoleOutput("Running report...");
   setNotice("Running report...", "info");
+  renderRunWarnings([]);
+  const performanceHealth = document.querySelector("#performance-health");
+  if (performanceHealth) {
+    performanceHealth.classList.remove("status-good", "status-warn");
+    performanceHealth.classList.add("status-neutral");
+    performanceHealth.textContent = "Computing";
+  }
+  setRunStep("fetch");
+  startRunTimer();
 
   try {
-    const response = await fetch("/api/run-report");
+    const response = await apiFetch("/api/run-report");
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "The report could not complete.");
     }
+    setRunStep("parse");
 
     document.querySelector("#poems-count").textContent = data.poems_files.length;
     document.querySelector("#ib-count").textContent = data.interactive_brokers_files.length;
@@ -862,15 +1093,20 @@ async function runReport() {
       [...new Set((positionsData.rows || []).map((row) => String(row.currency || "")).filter(Boolean))].sort(),
       "All currencies"
     );
+    setRunStep("render");
     renderFilteredTables();
+    renderRunWarnings(data.warnings || []);
     setConsoleOutput(data.console_output || "No console output was produced.");
+    setRunStep("done");
     setStatus(`Report ready: ${data.transactions.total_rows} transactions, ${data.positions.total_rows} positions.`);
-    setNotice("Report completed successfully.", "success");
+    setNotice((data.warnings || []).length ? "Report completed with warnings." : "Report completed successfully.", (data.warnings || []).length ? "warn" : "success");
   } catch (error) {
     setStatus("Failed");
+    setRunStep("fetch", true);
     setConsoleOutput(error.message);
     setNotice(error.message, "error");
   } finally {
+    stopRunTimer();
     setButtonsDisabled(false);
   }
 }
@@ -890,7 +1126,7 @@ async function uploadFiles(event) {
   setNotice("Uploading files...", "info");
 
   try {
-    const response = await fetch("/api/upload-files", {
+    const response = await apiFetch("/api/upload-files", {
       method: "POST",
       body: formData,
     });
@@ -999,8 +1235,11 @@ document.addEventListener("keydown", (event) => {
 });
 document.addEventListener("click", (event) => {
   const target = event.target;
-  if (!(target instanceof HTMLElement) || !target.classList.contains("assumption-tooltip")) {
+  if (!(target instanceof HTMLElement) || (!target.classList.contains("assumption-tooltip") && !target.closest("#assumption-tooltip"))) {
     hideAssumptionTooltip();
+  }
+  if (!(target instanceof HTMLElement) || (!target.closest("#column-picker") && !target.closest("#transactions-columns") && !target.closest("#positions-columns"))) {
+    hideColumnPicker();
   }
 });
 function applyRowDensity(value) {
@@ -1026,6 +1265,38 @@ positionsRowDensitySelect?.addEventListener("change", () => {
   applyRowDensity(value);
 });
 uploadForm.addEventListener("submit", uploadFiles);
+transactionsResetFiltersButton?.addEventListener("click", () => {
+  if (transactionsSearchInput) transactionsSearchInput.value = "";
+  if (transactionsBrokerFilter) transactionsBrokerFilter.value = "";
+  if (transactionsCurrencyFilter) transactionsCurrencyFilter.value = "";
+  renderFilteredTables();
+});
+positionsResetFiltersButton?.addEventListener("click", () => {
+  if (positionsSearchInput) positionsSearchInput.value = "";
+  if (positionsBrokerFilter) positionsBrokerFilter.value = "";
+  if (positionsCurrencyFilter) positionsCurrencyFilter.value = "";
+  renderFilteredTables();
+});
+transactionsExportViewButton?.addEventListener("click", () => {
+  exportRowsToCsv(
+    "transactions_current_view.csv",
+    getVisibleColumns("transactions-table", transactionsData.columns || []),
+    filteredTransactionsRows
+  );
+});
+positionsExportViewButton?.addEventListener("click", () => {
+  exportRowsToCsv(
+    "positions_current_view.csv",
+    getVisibleColumns("positions-table", positionsData.columns || []),
+    filteredPositionsRows
+  );
+});
+transactionsColumnsButton?.addEventListener("click", () => {
+  showColumnPicker(transactionsColumnsButton, "transactions-table", transactionsData.columns || []);
+});
+positionsColumnsButton?.addEventListener("click", () => {
+  showColumnPicker(positionsColumnsButton, "positions-table", positionsData.columns || []);
+});
 document.addEventListener("DOMContentLoaded", () => {
   try {
     const savedChartMode = window.localStorage.getItem(CHART_MODE_STORAGE_KEY);

@@ -2,6 +2,7 @@ const runAllTestsButton = document.querySelector("#run-all-tests");
 const testSummary = document.querySelector("#test-summary");
 const testingStatus = document.querySelector("#testing-status");
 const testCaseList = document.querySelector("#test-case-list");
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
 let testCases = [];
 const testResults = new Map();
@@ -130,6 +131,7 @@ async function runTestRequest(testName = null) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-CSRF-Token": csrfToken,
     },
     body: JSON.stringify(body),
   });

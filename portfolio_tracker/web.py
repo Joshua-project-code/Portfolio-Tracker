@@ -7,12 +7,13 @@ from __future__ import annotations
 import re
 import gc
 import os
+import secrets
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import Flask, jsonify, render_template, request, send_from_directory, session
 from werkzeug.utils import secure_filename
 
 from .constants import (
@@ -30,10 +31,22 @@ from .report_runner import run_report_with_console_output
 
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.environ.get(
+    "PORTFOLIO_TRACKER_SECRET_KEY",
+    "portfolio-tracker-dev-secret-change-me",
+)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TEST_CATALOG_PATH = PROJECT_ROOT / "docs" / "testapp.md"
 TESTS_PATH = PROJECT_ROOT / "tests"
 STATIC_PATH = PROJECT_ROOT / "portfolio_tracker" / "static"
+CSRF_HEADER_NAME = "X-CSRF-Token"
+CSRF_SESSION_KEY = "csrf_token"
+CSRF_PROTECTED_PATHS = {
+    "/api/tests/run",
+    "/api/delete-broker-files",
+    "/api/delete-output-files",
+    "/api/upload-files",
+}
 
 
 UPLOAD_TARGETS = {
@@ -60,6 +73,36 @@ def get_static_version() -> int:
     return max(int(path.stat().st_mtime) for path in asset_paths if path.exists())
 
 
+def get_or_create_csrf_token() -> str:
+    """Return session CSRF token, creating one if needed."""
+    token = session.get(CSRF_SESSION_KEY)
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session[CSRF_SESSION_KEY] = token
+    return token
+
+
+def validate_csrf_request() -> bool:
+    """Validate CSRF token from header or form body against session token."""
+    expected = session.get(CSRF_SESSION_KEY, "")
+    if not expected:
+        return False
+    provided = request.headers.get(CSRF_HEADER_NAME, "") or request.form.get(
+        "csrf_token", ""
+    )
+    return secrets.compare_digest(str(provided), str(expected))
+
+
+@app.before_request
+def csrf_protect_api_posts():
+    """Protect sensitive POST endpoints against cross-site request forgery."""
+    if request.method != "POST" or request.path not in CSRF_PROTECTED_PATHS:
+        return None
+    if not validate_csrf_request():
+        return jsonify({"error": "Invalid or missing CSRF token."}), 403
+    return None
+
+
 @app.get("/")
 def index():
     """Render the Portfolio Tracker web app."""
@@ -68,13 +111,14 @@ def index():
         default_root_path=str(DEFAULT_BROKER_ROOT_PATH),
         output_path=str(DEFAULT_OUTPUT_PATH),
         static_version=get_static_version(),
+        csrf_token=get_or_create_csrf_token(),
     )
 
 
 @app.get("/application-testing")
 def application_testing():
     """Render the Application Testing page."""
-    return render_template("application_testing.html")
+    return render_template("application_testing.html", csrf_token=get_or_create_csrf_token())
 
 
 @app.get("/debug-console")
@@ -83,6 +127,7 @@ def debug_console():
     return render_template(
         "debug_console.html",
         static_version=get_static_version(),
+        csrf_token=get_or_create_csrf_token(),
     )
 
 
