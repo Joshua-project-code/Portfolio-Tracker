@@ -1331,6 +1331,42 @@ class ReportRunnerTests(unittest.TestCase):
 
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["assumption_note"], "")
+        self.assertEqual(rows[0]["assumption_rule"], "unit_coverage_complete")
+
+    def test_calculate_holding_performance_metrics_mixed_complete_and_incomplete_holdings(self) -> None:
+        transactions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp", "Beta Ltd"],
+                "stock_code": ["ACME", "BETA"],
+                "price_currency": ["USD", "USD"],
+                "transaction_date": [pd.Timestamp("2025-01-10"), pd.Timestamp("2025-01-12")],
+                "transaction_amount": [1000.0, 120.0],
+                "transaction_type": ["buy", "buy"],
+                "units": [10.0, 1.0],
+            }
+        )
+        positions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp", "Beta Ltd"],
+                "stock_code": ["ACME", "BETA"],
+                "currency": ["USD", "USD"],
+                "quantity": [10.0, 2.0],
+                "market_value": [1200.0, 260.0],
+                "total_cost": [1010.0, 240.0],
+            }
+        )
+
+        rows = calculate_holding_performance_metrics(transactions, positions)
+        rows_by_code = {row["stock_code"]: row for row in rows}
+
+        self.assertEqual(rows_by_code["ACME"]["assumption_note"], "")
+        self.assertEqual(rows_by_code["ACME"]["assumption_rule"], "unit_coverage_complete")
+        self.assertEqual(
+            rows_by_code["BETA"]["assumption_note"],
+            "Incomplete history; initial investment inferred",
+        )
+        self.assertEqual(rows_by_code["BETA"]["assumption_rule"], "missing_initial_investment")
+        self.assertIn("Flagged: inferred missing initial", rows_by_code["BETA"]["assumption_debug"])
 
     def test_dataframe_table_serializes_nan_timestamps_and_numpy_scalars(self) -> None:
         table = dataframe_table(
@@ -1445,7 +1481,7 @@ class ReportRunnerTests(unittest.TestCase):
                     ):
                         with patch(
                             "portfolio_tracker.report_runner.save_report_outputs",
-                            return_value=stock_code_mapping,
+                            return_value=(stock_code_mapping, []),
                         ):
                             report = run_report(prompt_for_missing_files=False)
 
@@ -1549,7 +1585,8 @@ class ReportRunnerTests(unittest.TestCase):
                 )
                 stack.enter_context(patch.object(report_runner, "save_country_exposure_pie_charts"))
 
-                report_runner.save_report_outputs([], [], transactions, positions)
+                stock_code_mapping, warnings = report_runner.save_report_outputs([], [], transactions, positions)
+                self.assertEqual(warnings, [])
 
             saved = pd.read_csv(output_path / "data" / "stock_code_mapping.csv")
             self.assertEqual(saved.loc[0, "stock_code"], "ACME")
@@ -1573,6 +1610,87 @@ class ReportRunnerTests(unittest.TestCase):
                     {"currency": "USD", "country": "Japan", "investment_value": 25.0},
                 ],
             )
+
+    def test_save_report_outputs_collects_warnings_when_output_write_fails(self) -> None:
+        from portfolio_tracker import report_runner
+
+        transactions = pd.DataFrame({"stock_code": ["ACME"], "stock_name": ["Acme Corp"]})
+        positions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp"],
+                "stock_code": ["ACME"],
+                "currency": ["USD"],
+                "market_value": [100.0],
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir)
+            with ExitStack() as stack:
+                stack.enter_context(patch.object(report_runner, "DEFAULT_OUTPUT_PATH", output_path))
+                stack.enter_context(
+                    patch.object(
+                        report_runner,
+                        "DEFAULT_STOCK_CODE_MAPPING_PATH",
+                        output_path / "data" / "stock_code_mapping.csv",
+                    )
+                )
+                stack.enter_context(
+                    patch.object(report_runner, "save_dataframes_to_csv", side_effect=PermissionError("locked file"))
+                )
+                stack.enter_context(
+                    patch.object(report_runner, "save_country_exposure_outputs")
+                )
+                stack.enter_context(patch.object(report_runner, "save_monthly_charts"))
+                stack.enter_context(patch.object(report_runner, "save_position_distribution_charts"))
+
+                _, warnings = report_runner.save_report_outputs([], [], transactions, positions)
+
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("Could not save transactions/positions CSVs", warnings[0])
+
+    def test_run_report_includes_output_warnings(self) -> None:
+        transactions = pd.DataFrame(
+            {
+                "transaction_date": [pd.Timestamp("2026-01-02")],
+                "stock_name": ["Acme Corp"],
+                "stock_code": ["ACME"],
+                "price_currency": ["USD"],
+                "transaction_amount": [100.0],
+                "transaction_type": ["buy"],
+            }
+        )
+        positions = pd.DataFrame(
+            {
+                "stock_name": ["Acme Corp"],
+                "stock_code": ["ACME"],
+                "currency": ["USD"],
+                "market_value": [120.0],
+                "total_cost": [100.0],
+            }
+        )
+        stock_code_mapping = pd.DataFrame(
+            {"stock_code": ["ACME"], "stock_name": ["Acme Corp"], "old_stock_names": [pd.NA]}
+        )
+        warnings = ["Could not save transactions/positions CSVs: locked file"]
+
+        with patch("portfolio_tracker.report_runner.find_broker_files_for_report", return_value=[]):
+            with patch(
+                "portfolio_tracker.report_runner.build_dataframes",
+                return_value=(transactions, positions),
+            ):
+                with patch("portfolio_tracker.report_runner.print_report_preview"):
+                    with patch(
+                        "portfolio_tracker.report_runner.build_monthly_position_totals",
+                        return_value=None,
+                    ):
+                        with patch(
+                            "portfolio_tracker.report_runner.save_report_outputs",
+                            return_value=(stock_code_mapping, warnings),
+                        ):
+                            report = run_report(prompt_for_missing_files=False)
+
+        self.assertEqual(report["warnings"], warnings)
 
 
 class ErrorMessageTests(unittest.TestCase):

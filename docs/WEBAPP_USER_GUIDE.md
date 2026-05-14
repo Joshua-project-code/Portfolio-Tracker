@@ -101,6 +101,12 @@ Assumptions are displayed as a numbered list:
 1. Each currency with incomplete transaction history gets its own assumption.
 2. The assumption text states the inferred amount, date, cost basis, observed
    buys, observed sells, and date source.
+3. In `Per-Holding Returns (Stocks And ETFs)`, hover the `Assumptions` field
+   for a debug popover that explains exactly why the row is flagged or not.
+4. Holding-level rule outcomes are:
+   - `unit_coverage_complete`
+   - `cash_coverage_complete`
+   - `missing_initial_investment`
 
 ### Review Charts
 
@@ -174,6 +180,9 @@ The admin panel includes:
   the page.
 - `Clear Screen`: clears the browser display only. It does not delete source
   files or generated output files.
+
+If generated output files are locked by another process, report generation
+continues and returns non-fatal warnings instead of failing the full run.
 
 Each delete action asks for confirmation before it runs.
 

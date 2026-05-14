@@ -44,6 +44,38 @@ let isAdminModeEnabled = false;
 let transactionsData = { columns: [], rows: [], total_rows: 0 };
 let positionsData = { columns: [], rows: [], total_rows: 0 };
 let positionsAsOfDate = "";
+let assumptionTooltipElement = null;
+
+function ensureAssumptionTooltip() {
+  if (assumptionTooltipElement) {
+    return assumptionTooltipElement;
+  }
+  const tooltip = document.createElement("div");
+  tooltip.id = "assumption-tooltip";
+  tooltip.className = "assumption-tooltip-popover";
+  tooltip.hidden = true;
+  tooltip.setAttribute("role", "tooltip");
+  document.body.appendChild(tooltip);
+  assumptionTooltipElement = tooltip;
+  return tooltip;
+}
+
+function hideAssumptionTooltip() {
+  const tooltip = ensureAssumptionTooltip();
+  tooltip.hidden = true;
+  tooltip.textContent = "";
+}
+
+function showAssumptionTooltip(target, text) {
+  const tooltip = ensureAssumptionTooltip();
+  tooltip.textContent = text;
+  tooltip.hidden = false;
+  const rect = target.getBoundingClientRect();
+  const top = window.scrollY + rect.top - tooltip.offsetHeight - 8;
+  const left = window.scrollX + rect.left + rect.width / 2 - tooltip.offsetWidth / 2;
+  tooltip.style.top = `${Math.max(8, top)}px`;
+  tooltip.style.left = `${Math.max(8, left)}px`;
+}
 
 function setAdminModeUiState(enabled) {
   isAdminModeEnabled = enabled;
@@ -290,8 +322,13 @@ function renderHoldingPerformanceTable(rows = []) {
         if (column.key === "assumption_note") {
           const debugText = String(row.assumption_debug || "").trim();
           if (debugText) {
-            cell.title = debugText;
             cell.classList.add("assumption-tooltip");
+            cell.setAttribute("tabindex", "0");
+            cell.addEventListener("mouseenter", () => showAssumptionTooltip(cell, debugText));
+            cell.addEventListener("mouseleave", hideAssumptionTooltip);
+            cell.addEventListener("focus", () => showAssumptionTooltip(cell, debugText));
+            cell.addEventListener("blur", hideAssumptionTooltip);
+            cell.addEventListener("click", () => showAssumptionTooltip(cell, debugText));
           }
         }
       }
@@ -954,6 +991,18 @@ transactionsBrokerFilter?.addEventListener("change", renderFilteredTables);
 transactionsCurrencyFilter?.addEventListener("change", renderFilteredTables);
 positionsBrokerFilter?.addEventListener("change", renderFilteredTables);
 positionsCurrencyFilter?.addEventListener("change", renderFilteredTables);
+document.addEventListener("scroll", hideAssumptionTooltip, { passive: true });
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    hideAssumptionTooltip();
+  }
+});
+document.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || !target.classList.contains("assumption-tooltip")) {
+    hideAssumptionTooltip();
+  }
+});
 function applyRowDensity(value) {
   const compact = value === "compact";
   document.querySelector("#transactions-table").classList.toggle("compact-rows", compact);

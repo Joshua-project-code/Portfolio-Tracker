@@ -11,6 +11,16 @@ from datetime import date
 
 import pandas as pd
 
+INCOMPLETE_HISTORY_NOTE = "Incomplete history; initial investment inferred"
+
+
+def canonicalize_holding_key(stock_code: str, stock_name: str) -> str:
+    """Return a stable holding key from stock code, falling back to normalized name."""
+    normalized_code = str(stock_code or "").strip().upper()
+    if normalized_code:
+        return normalized_code
+    return "__NAME__" + str(stock_name or "").strip().upper()
+
 
 def normalize_transaction_cash_flows(transactions_df: pd.DataFrame) -> pd.DataFrame:
     """Return dated investor cash flows by currency; buys are outflows, sells inflows."""
@@ -317,10 +327,9 @@ def calculate_holding_performance_metrics(
     if positions.empty:
         return []
 
-    positions["holding_key"] = positions["stock_code"]
-    missing_code_mask = positions["holding_key"] == ""
-    positions.loc[missing_code_mask, "holding_key"] = (
-        "__NAME__" + positions.loc[missing_code_mask, "stock_name"].str.upper()
+    positions["holding_key"] = positions.apply(
+        lambda row: canonicalize_holding_key(row["stock_code"], row["stock_name"]),
+        axis=1,
     )
     # Use position-derived name mapping to align transactions with missing stock codes.
     name_to_holding_key = {
@@ -374,13 +383,14 @@ def calculate_holding_performance_metrics(
         transactions.loc[buy_mask, "signed_units"] = transactions.loc[buy_mask, "units"].abs()
         transactions.loc[sell_mask, "signed_units"] = -transactions.loc[sell_mask, "units"].abs()
 
-        transactions["holding_key"] = transactions["stock_code"]
-        missing_tx_code_mask = transactions["holding_key"] == ""
+        transactions["holding_key"] = transactions.apply(
+            lambda row: canonicalize_holding_key(row["stock_code"], row["stock_name"]),
+            axis=1,
+        )
+        missing_tx_code_mask = transactions["stock_code"] == ""
         transactions.loc[missing_tx_code_mask, "holding_key"] = (
-            transactions.loc[missing_tx_code_mask, "stock_name"]
-            .str.upper()
-            .map(name_to_holding_key)
-            .fillna("__NAME__" + transactions.loc[missing_tx_code_mask, "stock_name"].str.upper())
+            transactions.loc[missing_tx_code_mask, "stock_name"].str.upper().map(name_to_holding_key)
+            .fillna(transactions.loc[missing_tx_code_mask, "holding_key"])
         )
         holding_flows = (
             transactions.groupby(
@@ -416,25 +426,18 @@ def calculate_holding_performance_metrics(
             total_inflows=total_inflows,
         )
         assumed_initial_outflow = float(assumption["amount"])
-        # If transaction units fully cover the current shares, treat history as complete
-        # for holding-level assumptions even if cash totals differ due to fees/rounding.
         net_tracked_units = float(flow_rows.get("signed_units", pd.Series(dtype="float64")).sum())
-        has_unit_coverage = (not flow_rows.empty) and (current_quantity > 0) and (net_tracked_units >= current_quantity - 1e-8)
-        if has_unit_coverage:
-            assumed_initial_outflow = 0.0
-        assumption_debug = (
-            f"Flagged because inferred missing initial {currency} {float(assumption['amount']):,.2f} > 0. "
-            f"Cost basis={currency} {cost_basis:,.2f}, observed buy outflows={currency} {total_outflows:,.2f}, "
-            f"observed sell inflows={currency} {total_inflows:,.2f}, net tracked units={net_tracked_units:,.6f}, "
-            f"current quantity={current_quantity:,.6f}, inferred date={pd.Timestamp(assumption['date']).date().isoformat()} "
-            f"({assumption['date_source']})."
-            if assumed_initial_outflow > 0
-            else (
-                "Not flagged: holding history treated as complete."
-                if has_unit_coverage
-                else "Not flagged: inferred missing initial investment is zero."
-            )
+        completeness = evaluate_holding_history_completeness(
+            currency=currency,
+            assumption=assumption,
+            cost_basis=cost_basis,
+            total_outflows=total_outflows,
+            total_inflows=total_inflows,
+            net_tracked_units=net_tracked_units,
+            current_quantity=current_quantity,
         )
+        assumed_initial_outflow = float(completeness["assumed_initial_outflow"])
+        assumption_debug = str(completeness["debug"])
         adjusted_outflows = total_outflows + assumed_initial_outflow
         simple_return = None
         if adjusted_outflows > 0:
@@ -491,11 +494,12 @@ def calculate_holding_performance_metrics(
                 "simple_return": simple_return,
                 "time_weighted_return": twr,
                 "assumption_note": (
-                    "Incomplete history; initial investment inferred"
+                    INCOMPLETE_HISTORY_NOTE
                     if assumed_initial_outflow > 0
                     else ""
                 ),
                 "assumption_debug": assumption_debug,
+                "assumption_rule": str(completeness["rule"]),
             }
         )
 
@@ -525,6 +529,54 @@ def build_missing_history_assumption(
         "cost_basis": cost_basis,
         "observed_buy_outflows": total_outflows,
         "observed_sell_inflows": total_inflows,
+    }
+
+
+def evaluate_holding_history_completeness(
+    currency: str,
+    assumption: dict[str, object],
+    cost_basis: float,
+    total_outflows: float,
+    total_inflows: float,
+    net_tracked_units: float,
+    current_quantity: float,
+) -> dict[str, object]:
+    """Apply explicit rule ordering for whether a holding should be flagged incomplete."""
+    inferred_missing_amount = float(assumption["amount"])
+    has_position_units = current_quantity > 0
+    has_unit_coverage = has_position_units and (net_tracked_units >= current_quantity - 1e-8)
+    has_cash_coverage = inferred_missing_amount <= 1e-8
+
+    if has_unit_coverage:
+        return {
+            "assumed_initial_outflow": 0.0,
+            "rule": "unit_coverage_complete",
+            "debug": (
+                "Not flagged: transaction units fully cover current quantity. "
+                f"Net tracked units={net_tracked_units:,.6f}, current quantity={current_quantity:,.6f}. "
+                f"Cash basis check was {currency} {inferred_missing_amount:,.2f}."
+            ),
+        }
+    if has_cash_coverage:
+        return {
+            "assumed_initial_outflow": 0.0,
+            "rule": "cash_coverage_complete",
+            "debug": (
+                "Not flagged: inferred missing initial investment is zero from cash coverage. "
+                f"Cost basis={currency} {cost_basis:,.2f}, observed buy outflows={currency} {total_outflows:,.2f}, "
+                f"observed sell inflows={currency} {total_inflows:,.2f}."
+            ),
+        }
+    return {
+        "assumed_initial_outflow": inferred_missing_amount,
+        "rule": "missing_initial_investment",
+        "debug": (
+            f"Flagged: inferred missing initial {currency} {inferred_missing_amount:,.2f}. "
+            f"Cost basis={currency} {cost_basis:,.2f}, observed buy outflows={currency} {total_outflows:,.2f}, "
+            f"observed sell inflows={currency} {total_inflows:,.2f}, net tracked units={net_tracked_units:,.6f}, "
+            f"current quantity={current_quantity:,.6f}, inferred date={pd.Timestamp(assumption['date']).date().isoformat()} "
+            f"({assumption['date_source']})."
+        ),
     }
 
 

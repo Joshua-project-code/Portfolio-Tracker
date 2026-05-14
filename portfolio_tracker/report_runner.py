@@ -180,24 +180,37 @@ def save_report_outputs(
     transactions_df: pd.DataFrame,
     positions_df: pd.DataFrame,
     monthly_position_totals_df: pd.DataFrame | None = None,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, list[str]]:
     """Save report CSV/chart outputs and return the latest stock-code mapping."""
+    warnings: list[str] = []
     today = date.today().isoformat()
-    save_dataframes_to_csv(
-        transactions_df,
-        positions_df,
-        DEFAULT_OUTPUT_PATH,
-        generated_on=today,
-    )
+    try:
+        save_dataframes_to_csv(
+            transactions_df,
+            positions_df,
+            DEFAULT_OUTPUT_PATH,
+            generated_on=today,
+        )
+    except OSError as error:
+        warnings.append(f"Could not save transactions/positions CSVs: {error}")
     stock_code_mapping_df = save_stock_code_mapping(
         transactions_df,
         positions_df,
         DEFAULT_STOCK_CODE_MAPPING_PATH,
     )
-    save_country_exposure_outputs(positions_df, stock_code_mapping_df, today)
-    save_monthly_charts(workbooks, csv_files, transactions_df, monthly_position_totals_df)
-    save_position_distribution_charts(positions_df)
-    return stock_code_mapping_df
+    try:
+        save_country_exposure_outputs(positions_df, stock_code_mapping_df, today)
+    except OSError as error:
+        warnings.append(f"Could not save country exposure outputs: {error}")
+    try:
+        save_monthly_charts(workbooks, csv_files, transactions_df, monthly_position_totals_df)
+    except OSError as error:
+        warnings.append(f"Could not save monthly charts: {error}")
+    try:
+        save_position_distribution_charts(positions_df)
+    except OSError as error:
+        warnings.append(f"Could not save position distribution charts: {error}")
+    return stock_code_mapping_df, warnings
 
 
 def save_country_exposure_outputs(
@@ -419,7 +432,7 @@ def run_report(
     transactions_df, positions_df = build_dataframes(workbooks, interactive_brokers_path)
     print_report_preview(workbooks, csv_files, transactions_df, positions_df)
     monthly_position_totals_df = build_monthly_position_totals(workbooks, csv_files)
-    stock_code_mapping_df = save_report_outputs(
+    stock_code_mapping_df, output_warnings = save_report_outputs(
         workbooks,
         csv_files,
         transactions_df,
@@ -455,6 +468,7 @@ def run_report(
         "chart_sets": chart_sets,
         "csv_files": csv_names,
         "performance": performance,
+        "warnings": output_warnings,
     }
 
 

@@ -69,6 +69,8 @@ Acceptance criteria:
 - The web app links to `stock_code_mapping.csv`.
 - Generated files are written to the sibling `Output` folder, except
   `stock_code_mapping.csv`, which is stored in `data`.
+- If a generated file is locked/unwritable, the report still returns data and
+  exposes a warning instead of failing the full run.
 
 ### US-005 Review Portfolio Charts
 
@@ -93,6 +95,11 @@ Acceptance criteria:
   initial investment used to calculate IRR and time-weighted return.
 - Performance assumptions are displayed as a numbered list, one assumption per
   line.
+- Per-holding assumption status is derived from explicit rule outcomes:
+  `unit_coverage_complete`, `cash_coverage_complete`, and
+  `missing_initial_investment`.
+- Hovering the per-holding `Assumptions` field shows a debug popover with the
+  rule reason and evidence (cash coverage, units coverage, inferred date/source).
 - When transaction history covers the current position cost basis, IRR and
   time-weighted return are calculated without adding an assumed starting
   investment.

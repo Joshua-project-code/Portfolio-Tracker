@@ -375,6 +375,19 @@ main {
   cursor: help;
 }
 
+.assumption-tooltip-popover {
+  background: #111827;
+  border-radius: 6px;
+  color: #f9fafb;
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 360px;
+  padding: 8px 10px;
+  position: absolute;
+  white-space: normal;
+  z-index: 1100;
+}
+
 .chart-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 16px;

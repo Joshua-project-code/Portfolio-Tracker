@@ -6,7 +6,7 @@ Run all tests from the project folder with:
 python -m unittest discover -s tests -v
 ```
 
-The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 87 catalogued test cases.
+The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 94 catalogued test cases.
 
 Keep this catalogue synchronized with `tests/test_project.py`. Whenever a test
 is added, removed, renamed, or materially changed, update the matching catalogue
@@ -101,3 +101,10 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-085 | `test_calculate_time_weighted_return_uses_date_weighted_external_flows` | Verifies TWR uses date-weighted Modified Dietz cash-flow handling. | Returns the hand-calculated sub-period return using exact transaction-date weighting. |
 | TC-086 | `test_debug_console_page_renders_shell` | Confirms Debug Console page is available and includes shared Back To Top behavior. | Response includes Debug Console shell, refresh control, and Back To Top button/script markers. |
 | TC-087 | `test_run_report_fills_missing_stock_codes_for_positions_and_per_holding` | Ensures report output uses stock-code mapping to fill missing stock codes before rendering `Investment Positions` and per-holding returns. | Returned report shows filled `stock_code` values in both `positions` table rows and `performance.by_holding` rows. |
+| TC-088 | `test_calculate_holding_performance_metrics_leaves_assumption_blank_for_complete_history` | Confirms complete buy/sell cash coverage does not mark a holding as incomplete. | Per-holding `assumption_note` is blank. |
+| TC-089 | `test_calculate_holding_performance_metrics_matches_blank_transaction_codes_by_name` | Matches blank transaction stock codes to mapped position holdings by stock name. | Holding row resolves to mapped code and `assumption_note` is blank when history is complete. |
+| TC-090 | `test_calculate_holding_performance_metrics_uses_unit_coverage_to_clear_assumption` | Uses unit coverage to avoid false incomplete-history flags when cost basis differs slightly. | Per-holding `assumption_note` is blank and rule is `unit_coverage_complete`. |
+| TC-091 | `test_calculate_holding_performance_metrics_mixed_complete_and_incomplete_holdings` | Validates mixed complete/incomplete holdings in one dataset. | Complete holding has blank assumption; incomplete holding is flagged with rule `missing_initial_investment`. |
+| TC-092 | `test_save_report_outputs_collects_warnings_when_output_write_fails` | Ensures output-save failures are non-fatal and captured as warnings. | `save_report_outputs` returns warning text instead of raising and still returns stock-code mapping data. |
+| TC-093 | `test_run_report_includes_output_warnings` | Confirms report payload includes output warnings returned by the save workflow. | `report[\"warnings\"]` contains warning messages for UI display/debugging. |
+| TC-094 | `test_run_report_with_console_output_includes_captured_console_text` | Confirms report wrapper still captures console output text after workflow updates. | Returned payload includes `console_output` and run_report invocation remains successful. |

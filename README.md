@@ -228,6 +228,13 @@ from the earliest available evidence: if a valuation snapshot is first, that
 month-end snapshot date is used; if a transaction is first, the day before that
 transaction is used. The Portfolio Performance section states each assumption
 as a numbered point with the amount, date, and data used for the assumption.
+Per-holding completeness uses explicit rule ordering:
+- `unit_coverage_complete`: transaction units cover current quantity
+- `cash_coverage_complete`: inferred missing initial investment is zero
+- `missing_initial_investment`: inferred missing initial investment is positive
+
+In the per-holding table, hover the `Assumptions` cell to view a detailed debug
+popover describing exactly why that row was or was not flagged.
 When transaction history covers the current position cost basis, IRR and
 time-weighted return are calculated from reported data without adding an
 assumed starting investment. Time-weighted return is approximated by chaining
@@ -305,6 +312,9 @@ using today's date in the filename. If the `Output` folder does not exist, the
 script creates it.
 If an output file with the same generated filename already exists, the script
 overwrites that file. Other existing files in the `Output` folder are left as-is.
+If a generated output file is locked (for example opened by another process),
+the report now continues and returns data to the UI with a warning instead of
+failing the entire run.
 
 If either broker folder does not exist, the script creates it. If either broker
 folder has no supported files, the script prompts you to upload the required
