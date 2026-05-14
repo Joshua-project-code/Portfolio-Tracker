@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import datetime
 
 import pandas as pd
 
@@ -177,10 +178,86 @@ def save_country_exposure_pie_charts(
         )
         axis.set_aspect("equal")
         plt.tight_layout()
-        plt.savefig(chart_file, dpi=150)
+        try:
+            plt.savefig(chart_file, dpi=150)
+        except PermissionError:
+            fallback_file = chart_file.with_name(
+                f"{chart_file.stem}_{datetime.now().strftime('%H%M%S')}{chart_file.suffix}"
+            )
+            chart_file = fallback_file
+            plt.savefig(chart_file, dpi=150)
         plt.close(fig)
 
         print(f"{action} country exposure pie chart: {chart_file}")
+
+
+def save_plotly_country_exposure_pie_charts(
+    country_totals_df: pd.DataFrame,
+    output_path: Path,
+    max_slices: int = 6,
+    generated_on: str | None = None,
+) -> None:
+    """Save one Plotly country exposure pie chart per currency."""
+    if country_totals_df.empty:
+        print("No country exposure totals found. Skipping Plotly country exposure pie charts.")
+        return
+
+    import plotly.graph_objects as go
+
+    ensure_folder_exists(output_path)
+    chart_totals = country_totals_df.copy()
+    chart_totals["investment_value"] = pd.to_numeric(
+        chart_totals["investment_value"], errors="coerce"
+    )
+    chart_totals = chart_totals.dropna(subset=["investment_value"])
+    chart_date = generated_on or pd.Timestamp.today().date().isoformat()
+
+    for currency in chart_totals["currency"].dropna().unique():
+        currency_totals = chart_totals[chart_totals["currency"] == currency]
+        currency_totals = aggregate_country_totals_for_pie(
+            currency_totals,
+            max_slices=max_slices,
+        )
+        if currency_totals.empty:
+            continue
+
+        chart_file = output_path / f"plotly_country_exposure_pie_{currency}_{chart_date}.html"
+        action = "Overwriting existing" if chart_file.exists() else "Creating new"
+        figure = go.Figure(
+            go.Pie(
+                labels=currency_totals["country"],
+                values=currency_totals["investment_value"],
+                textinfo="label+percent",
+                hovertemplate="%{label}<br>%{value:,.2f}<br>%{percent}<extra></extra>",
+            )
+        )
+        figure.update_layout(
+            title_text=f"Country Exposure - {currency}",
+            template="plotly_white",
+            height=700,
+            font={"family": "Inter, Segoe UI, Roboto, Arial, sans-serif", "size": 13, "color": "#1f2933"},
+            title={"font": {"size": 22}, "x": 0.02, "xanchor": "left"},
+            showlegend=True,
+            legend={
+                "orientation": "v",
+                "x": 1.02,
+                "y": 1,
+                "xanchor": "left",
+                "yanchor": "top",
+                "font": {"size": 12},
+                "title": {"font": {"size": 13}},
+            },
+            margin={"t": 80, "b": 90, "l": 60, "r": 260},
+        )
+        try:
+            figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
+        except PermissionError:
+            fallback_file = chart_file.with_name(
+                f"{chart_file.stem}_{datetime.now().strftime('%H%M%S')}{chart_file.suffix}"
+            )
+            chart_file = fallback_file
+            figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
+        print(f"{action} plotly country exposure pie chart: {chart_file}")
 
 
 def aggregate_country_totals_for_pie(

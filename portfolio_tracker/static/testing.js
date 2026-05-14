@@ -2,6 +2,9 @@ const runAllTestsButton = document.querySelector("#run-all-tests");
 const testSummary = document.querySelector("#test-summary");
 const testingStatus = document.querySelector("#testing-status");
 const testCaseList = document.querySelector("#test-case-list");
+const testOutcomePanel = document.querySelector("#test-outcome-panel");
+const testOutcomeCaption = document.querySelector("#test-outcome-caption");
+const testOutcomeList = document.querySelector("#test-outcome-list");
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
 let testCases = [];
@@ -31,9 +34,9 @@ function statusLabel(status) {
   return "not run";
 }
 
-function setRowStatus(testName, status) {
-  testResults.set(testName, status);
-  const row = document.querySelector(`[data-test-name="${testName}"]`);
+function setRowStatus(testId, status) {
+  testResults.set(testId, status);
+  const row = document.querySelector(`[data-test-id="${testId}"]`);
   if (!row) {
     updateSummary();
     return;
@@ -43,6 +46,43 @@ function setRowStatus(testName, status) {
   result.className = `test-result ${status}`;
   result.textContent = statusLabel(status);
   updateSummary();
+}
+
+function renderOutcomeSummary() {
+  if (!testOutcomePanel || !testOutcomeCaption || !testOutcomeList) {
+    return;
+  }
+  const failures = [];
+  const notRun = [];
+  testCases.forEach((testCase) => {
+    const status = testResults.get(testCase.id) || "not-run";
+    if (status === "failed") {
+      failures.push(testCase);
+    } else if (status === "not-run") {
+      notRun.push(testCase);
+    }
+  });
+
+  if (!failures.length && !notRun.length) {
+    testOutcomePanel.hidden = true;
+    testOutcomeCaption.textContent = "";
+    testOutcomeList.innerHTML = "";
+    return;
+  }
+
+  testOutcomePanel.hidden = false;
+  testOutcomeCaption.textContent = `${failures.length} failed, ${notRun.length} not run`;
+  testOutcomeList.innerHTML = "";
+  failures.forEach((testCase) => {
+    const item = document.createElement("li");
+    item.textContent = `FAILED: ${testCase.id} ${testCase.name}`;
+    testOutcomeList.appendChild(item);
+  });
+  notRun.forEach((testCase) => {
+    const item = document.createElement("li");
+    item.textContent = `NOT RUN: ${testCase.id} ${testCase.name}`;
+    testOutcomeList.appendChild(item);
+  });
 }
 
 function setButtonsDisabled(disabled) {
@@ -55,6 +95,11 @@ function setButtonsDisabled(disabled) {
 function renderTestCases() {
   testCaseList.innerHTML = "";
   testResults.clear();
+  if (testOutcomePanel && testOutcomeCaption && testOutcomeList) {
+    testOutcomePanel.hidden = true;
+    testOutcomeCaption.textContent = "";
+    testOutcomeList.innerHTML = "";
+  }
 
   if (!testCases.length) {
     testCaseList.textContent = "No test cases found.";
@@ -65,10 +110,11 @@ function renderTestCases() {
 
   testCaseList.className = "test-case-list";
   testCases.forEach((testCase) => {
-    testResults.set(testCase.name, "not-run");
+    testResults.set(testCase.id, "not-run");
 
     const row = document.createElement("article");
     row.className = "test-case-row";
+    row.dataset.testId = testCase.id;
     row.dataset.testName = testCase.name;
 
     const details = document.createElement("div");
@@ -95,7 +141,7 @@ function renderTestCases() {
     button.className = "run-test";
     button.type = "button";
     button.textContent = "Run Test";
-    button.addEventListener("click", () => runSingleTest(testCase.name));
+    button.addEventListener("click", () => runSingleTest(testCase.id, testCase.name));
 
     details.append(title, description, expected);
     actions.append(result, button);
@@ -142,18 +188,20 @@ async function runTestRequest(testName = null) {
   return data;
 }
 
-async function runSingleTest(testName) {
+async function runSingleTest(testId, testName) {
   setButtonsDisabled(true);
   setTestingStatus("Running");
-  setRowStatus(testName, "running");
+  setRowStatus(testId, "running");
 
   try {
     const data = await runTestRequest(testName);
     const status = data.results[testName] || (data.ok ? "passed" : "failed");
-    setRowStatus(testName, status);
+    setRowStatus(testId, status);
+    renderOutcomeSummary();
     setTestingStatus("Ready");
   } catch (error) {
-    setRowStatus(testName, "failed");
+    setRowStatus(testId, "failed");
+    renderOutcomeSummary();
     setTestingStatus(error.message);
   } finally {
     setButtonsDisabled(false);
@@ -163,16 +211,18 @@ async function runSingleTest(testName) {
 async function runAllTests() {
   setButtonsDisabled(true);
   setTestingStatus("Running");
-  testCases.forEach((testCase) => setRowStatus(testCase.name, "running"));
+  testCases.forEach((testCase) => setRowStatus(testCase.id, "running"));
 
   try {
     const data = await runTestRequest();
     testCases.forEach((testCase) => {
-      setRowStatus(testCase.name, data.results[testCase.name] || "failed");
+      setRowStatus(testCase.id, data.results[testCase.name] || "failed");
     });
+    renderOutcomeSummary();
     setTestingStatus(data.ok ? "Complete" : "Failed");
   } catch (error) {
-    testCases.forEach((testCase) => setRowStatus(testCase.name, "failed"));
+    testCases.forEach((testCase) => setRowStatus(testCase.id, "failed"));
+    renderOutcomeSummary();
     setTestingStatus(error.message);
   } finally {
     setButtonsDisabled(false);

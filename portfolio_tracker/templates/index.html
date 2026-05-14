@@ -113,7 +113,11 @@
       <section class="panel">
         <div class="panel-heading">
           <h2>Portfolio Performance</h2>
+          <span id="performance-as-of" class="caption"></span>
           <span id="performance-health" class="status-badge">Awaiting run</span>
+        </div>
+        <div id="performance-quality" class="performance-quality muted">
+          Run report to assess performance data quality.
         </div>
         <section class="performance-grid">
           <article class="metric">
@@ -133,7 +137,13 @@
             <strong id="cagr">-</strong>
           </article>
         </section>
-        <div id="performance-assumptions" class="performance-assumptions muted"></div>
+        <div id="performance-issues-panel" class="performance-issues" hidden>
+          <div class="panel-heading">
+            <h3>Attention Needed</h3>
+            <span id="performance-issues-count" class="caption"></span>
+          </div>
+          <ul id="performance-issues-list" class="warning-list"></ul>
+        </div>
         <div class="panel-heading performance-holdings-heading">
           <h3>Per-Holding Returns (Stocks And ETFs)</h3>
           <span class="caption">Click a column header to sort</span>

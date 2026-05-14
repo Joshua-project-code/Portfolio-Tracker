@@ -391,3 +391,14 @@ Additional project documentation is in the `docs` folder:
 - `docs/Run_time_df.md`: runtime DataFrame inventory
 - `docs/testapp.md`: automated test case catalogue consumed by the Application
   Testing page
+
+## Recent Updates (2026-05-14)
+
+- Allocation pie charts now use fixed slices per currency: top 5 categories plus `Others`.
+- USD sector/geography `Unmapped` issues were fixed by filling missing stock codes from `data/stock_code_mapping.csv` before stock mapping enrichment.
+- Monthly transaction trend charts now zero-fill missing months per broker/currency series so lines show explicit `0` points instead of gaps.
+- Portfolio Performance now shows the same `As of` date used in Investment Positions.
+- Portfolio Performance now uses an actionable `Attention Needed` panel instead of a separate assumptions list.
+- Application Testing now includes a `Run Outcome` summary panel listing failed/not-run test cases.
+- Debug Console refresh now shows explicit status, last refreshed timestamp, change/no-change result, and recent refresh history.
+

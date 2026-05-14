@@ -2,12 +2,13 @@
 # for broker positions and transactions. It contains helpers for the Matplotlib
 # cache directory used by Seaborn, monthly position and transaction totals,
 # monthly line charts, currency-separated position distribution pie charts, and
-# aggregation of small pie slices into an Others category.
+# aggregation of pie slices into an Others category.
 
 from __future__ import annotations
 
 import os
 from datetime import date
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -48,7 +49,7 @@ def set_matplotlib_cache_dir() -> None:
 
 
 def build_monthly_position_totals(
-    workbooks: list[Path], csv_files: list[Path]
+    workbooks: list[Path], csv_files: list[Path], fill_missing_months: bool = False
 ) -> pd.DataFrame:
     """Build monthly total market value by broker and currency from each snapshot."""
     records: list[dict[str, object]] = []
@@ -92,11 +93,14 @@ def build_monthly_position_totals(
         return pd.DataFrame(columns=["month", "series", "market_value"])
 
     monthly_totals = pd.DataFrame(records)
-    return (
+    grouped = (
         monthly_totals.groupby(["month", "series"], as_index=False)["market_value"]
         .sum()
         .sort_values(["month", "series"], ignore_index=True)
     )
+    if not fill_missing_months:
+        return grouped
+    return complete_monthly_series(grouped, "market_value")
 
 
 def save_seaborn_monthly_position_chart(
@@ -151,13 +155,44 @@ def build_monthly_transaction_totals(transactions_df: pd.DataFrame) -> pd.DataFr
         + monthly_transactions["price_currency"].astype(str)
     )
 
-    return (
+    grouped = (
         monthly_transactions.groupby(["month", "series"], as_index=False)[
             "transaction_amount"
         ]
         .sum()
         .sort_values(["month", "series"], ignore_index=True)
     )
+    return complete_monthly_series(grouped, "transaction_amount")
+
+
+def complete_monthly_series(
+    grouped: pd.DataFrame,
+    value_column: str,
+) -> pd.DataFrame:
+    """Fill missing month/series combinations with zero for chart continuity."""
+    if grouped.empty:
+        return grouped
+
+    month_range = pd.date_range(
+        grouped["month"].min(),
+        grouped["month"].max(),
+        freq="MS",
+    )
+    series_values = sorted(grouped["series"].dropna().unique().tolist())
+    full_index = pd.MultiIndex.from_product(
+        [month_range, series_values], names=["month", "series"]
+    )
+
+    completed = (
+        grouped.set_index(["month", "series"])
+        .reindex(full_index, fill_value=0)
+        .reset_index()
+    )
+    completed[value_column] = pd.to_numeric(
+        completed[value_column], errors="coerce"
+    ).fillna(0)
+
+    return completed.sort_values(["month", "series"], ignore_index=True)
 
 
 def save_seaborn_monthly_transaction_chart(
@@ -227,14 +262,17 @@ def save_seaborn_monthly_line_chart(
         },
     )
     series_count = max(chart_data["series"].nunique(), 1)
+    month_count = max(chart_data["month"].nunique(), 1)
     fig_height = max(7.2, 5.8 + series_count * 0.22)
-    fig, axis = plt.subplots(figsize=(14, fig_height))
+    fig_width = max(14.0, 8.0 + month_count * 0.45)
+    fig, axis = plt.subplots(figsize=(fig_width, fig_height))
     sns.lineplot(
         data=chart_data,
         x="month",
         y=value_column,
         hue="series",
         marker="o",
+        markersize=7,
         linewidth=2.2,
         ax=axis,
     )
@@ -242,8 +280,8 @@ def save_seaborn_monthly_line_chart(
     axis.set_xlabel("Month", fontsize=CHART_FONTS["axis_label"], labelpad=10)
     axis.set_ylabel(y_label, fontsize=CHART_FONTS["axis_label"], labelpad=10)
     axis.tick_params(axis="both", labelsize=CHART_FONTS["tick"])
-    axis.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=8))
-    axis.xaxis.set_major_formatter(mdates.ConciseDateFormatter(axis.xaxis.get_major_locator()))
+    axis.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+    axis.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
     axis.margins(x=0.04)
     handles, labels = axis.get_legend_handles_labels()
     if axis.get_legend() is not None:
@@ -264,7 +302,14 @@ def save_seaborn_monthly_line_chart(
     )
     fig.autofmt_xdate(rotation=30, ha="right")
     fig.subplots_adjust(left=0.09, right=0.72, top=0.88, bottom=0.20)
-    plt.savefig(chart_file, dpi=150)
+    try:
+        plt.savefig(chart_file, dpi=150)
+    except PermissionError:
+        fallback_file = chart_file.with_name(
+            f"{chart_file.stem}_{datetime.now().strftime('%H%M%S')}{chart_file.suffix}"
+        )
+        chart_file = fallback_file
+        plt.savefig(chart_file, dpi=150)
     plt.close()
 
     print(f"{action} {action_label}: {chart_file}")
@@ -293,15 +338,16 @@ def save_plotly_monthly_line_chart(
 
     chart_data = monthly_totals.copy()
     chart_data["month"] = pd.to_datetime(chart_data["month"])
+    chart_data["month_label"] = chart_data["month"].dt.strftime("%Y-%m")
     figure = px.line(
         chart_data,
-        x="month",
+        x="month_label",
         y=value_column,
         color="series",
         markers=True,
         title=chart_title,
         labels={
-            "month": "Month",
+            "month_label": "Month",
             value_column: y_label,
             "series": "Broker - Currency",
         },
@@ -311,7 +357,14 @@ def save_plotly_monthly_line_chart(
         height=620,
         font={"family": PLOTLY_FONT_FAMILY, "size": 13, "color": "#1f2933"},
         title={"font": {"size": 22}, "x": 0.02, "xanchor": "left"},
-        xaxis={"title_font": {"size": 15}, "tickfont": {"size": 12}, "automargin": True},
+        xaxis={
+            "title_font": {"size": 15},
+            "tickfont": {"size": 12},
+            "automargin": True,
+            "type": "category",
+            "categoryorder": "array",
+            "categoryarray": chart_data["month_label"].drop_duplicates().tolist(),
+        },
         yaxis={"title_font": {"size": 15}, "tickfont": {"size": 12}, "automargin": True},
         legend_title_text="Broker - Currency",
         legend={
@@ -325,7 +378,19 @@ def save_plotly_monthly_line_chart(
         },
         margin={"t": 80, "b": 90, "l": 90, "r": 260},
     )
-    figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
+    figure.update_traces(
+        mode="lines+markers",
+        marker={"size": 8},
+        connectgaps=False,
+    )
+    try:
+        figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
+    except PermissionError:
+        fallback_file = chart_file.with_name(
+            f"{chart_file.stem}_{datetime.now().strftime('%H%M%S')}{chart_file.suffix}"
+        )
+        chart_file = fallback_file
+        figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
 
     print(f"{action} {action_label}: {chart_file}")
 
@@ -376,7 +441,7 @@ def save_seaborn_position_distribution_pie_chart(
     for currency in currencies:
         currency_totals = totals[totals["currency"] == currency]
         currency_totals = aggregate_small_pie_slices(
-            currency_totals, category_column, "market_value", threshold=0.10
+            currency_totals, category_column, "market_value", max_slices=6
         )
         if currency_totals.empty:
             continue
@@ -423,7 +488,14 @@ def save_seaborn_position_distribution_pie_chart(
             columnspacing=1.4,
         )
         fig.subplots_adjust(left=0.05, right=0.74, top=0.86, bottom=0.08)
-        plt.savefig(chart_file, dpi=150)
+        try:
+            plt.savefig(chart_file, dpi=150)
+        except PermissionError:
+            fallback_file = chart_file.with_name(
+                f"{chart_file.stem}_{datetime.now().strftime('%H%M%S')}{chart_file.suffix}"
+            )
+            chart_file = fallback_file
+            plt.savefig(chart_file, dpi=150)
         plt.close()
         print(f"{action} seaborn {chart_title.lower()} chart: {chart_file}")
 
@@ -464,7 +536,7 @@ def save_plotly_position_distribution_pie_chart(
     for currency in currencies:
         currency_totals = totals[totals["currency"] == currency]
         currency_totals = aggregate_small_pie_slices(
-            currency_totals, category_column, "market_value", threshold=0.10
+            currency_totals, category_column, "market_value", max_slices=6
         )
         if currency_totals.empty:
             continue
@@ -499,7 +571,14 @@ def save_plotly_position_distribution_pie_chart(
             },
             margin={"t": 80, "b": 90, "l": 60, "r": 260},
         )
-        figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
+        try:
+            figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
+        except PermissionError:
+            fallback_file = chart_file.with_name(
+                f"{chart_file.stem}_{datetime.now().strftime('%H%M%S')}{chart_file.suffix}"
+            )
+            chart_file = fallback_file
+            figure.write_html(chart_file, include_plotlyjs=True, full_html=True)
         print(f"{action} plotly {chart_title.lower()} chart: {chart_file}")
 
 
@@ -507,21 +586,24 @@ def aggregate_small_pie_slices(
     totals: pd.DataFrame,
     category_column: str,
     value_column: str,
-    threshold: float,
+    max_slices: int,
 ) -> pd.DataFrame:
-    """Aggregate pie slices below the percentage threshold into Others."""
+    """Keep top slices and aggregate the rest into Others."""
+    if max_slices < 2:
+        raise ValueError("max_slices must be at least 2")
+
     total_value = totals[value_column].sum()
     if total_value <= 0:
         return totals
 
     totals = totals.copy()
-    totals["percentage"] = totals[value_column] / total_value
-    small_slices = totals["percentage"] < threshold
-    if not small_slices.any():
-        return totals.drop(columns=["percentage"])
+    totals = totals.sort_values(value_column, ascending=False).reset_index(drop=True)
+    if len(totals) <= max_slices:
+        return totals
 
-    large_totals = totals.loc[~small_slices].drop(columns=["percentage"])
-    others_total = totals.loc[small_slices, value_column].sum()
+    visible_count = max_slices - 1
+    large_totals = totals.head(visible_count).copy()
+    others_total = totals.iloc[visible_count:][value_column].sum()
     if others_total <= 0:
         return large_totals
 

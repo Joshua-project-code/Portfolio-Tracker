@@ -16,6 +16,7 @@ import pandas as pd
 from .chart_helpers import (
     build_monthly_position_totals,
     build_monthly_transaction_totals,
+    complete_monthly_series,
     save_plotly_monthly_position_chart,
     save_plotly_monthly_transaction_chart,
     save_plotly_position_distribution_pie_chart,
@@ -35,6 +36,7 @@ from .etf_country_exposure import (
     build_country_exposure_totals_dataframe,
     fill_missing_stock_codes_from_mapping,
     load_etf_country_matrix,
+    save_plotly_country_exposure_pie_charts,
     save_country_exposure_pie_charts,
 )
 from .file_helpers import ensure_folder_exists, find_csv_files, find_workbooks
@@ -65,6 +67,8 @@ SEABORN_CHART_PATTERNS = [
 PLOTLY_CHART_PATTERNS = [
     "plotly_investment_positions_by_month_{today}.html",
     "plotly_transactions_by_month_{today}.html",
+    "plotly_country_exposure_pie_SGD_{today}.html",
+    "plotly_country_exposure_pie_USD_{today}.html",
 ]
 
 
@@ -207,7 +211,7 @@ def save_report_outputs(
     except OSError as error:
         warnings.append(f"Could not save monthly charts: {error}")
     try:
-        save_position_distribution_charts(positions_df)
+        save_position_distribution_charts(positions_df, stock_code_mapping_df)
     except OSError as error:
         warnings.append(f"Could not save position distribution charts: {error}")
     return stock_code_mapping_df, warnings
@@ -244,6 +248,11 @@ def save_country_exposure_outputs(
         DEFAULT_OUTPUT_PATH,
         generated_on=today,
     )
+    save_plotly_country_exposure_pie_charts(
+        country_exposure_totals_df,
+        DEFAULT_OUTPUT_PATH,
+        generated_on=today,
+    )
 
 
 def save_monthly_charts(
@@ -258,17 +267,32 @@ def save_monthly_charts(
         if monthly_position_totals_df is not None
         else build_monthly_position_totals(workbooks, csv_files)
     )
-    save_seaborn_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
-    save_plotly_monthly_position_chart(monthly_totals_df, DEFAULT_OUTPUT_PATH)
+    monthly_position_chart_df = build_monthly_position_totals(
+        workbooks,
+        csv_files,
+        fill_missing_months=True,
+    ) if monthly_position_totals_df is None else complete_monthly_series(
+        monthly_totals_df, "market_value"
+    )
+    save_seaborn_monthly_position_chart(monthly_position_chart_df, DEFAULT_OUTPUT_PATH)
+    save_plotly_monthly_position_chart(monthly_position_chart_df, DEFAULT_OUTPUT_PATH)
     monthly_transactions_df = build_monthly_transaction_totals(transactions_df)
     save_seaborn_monthly_transaction_chart(monthly_transactions_df, DEFAULT_OUTPUT_PATH)
     save_plotly_monthly_transaction_chart(monthly_transactions_df, DEFAULT_OUTPUT_PATH)
 
 
-def save_position_distribution_charts(positions_df: pd.DataFrame) -> None:
+def save_position_distribution_charts(
+    positions_df: pd.DataFrame,
+    stock_code_mapping_df: pd.DataFrame,
+) -> None:
     """Save sector and geography distribution charts."""
+    positions_for_mapping = fill_missing_stock_codes_from_mapping(
+        positions_df, stock_code_mapping_df
+    )
     stock_mapping_df = load_stock_mapping(DEFAULT_STOCK_MAPPING_PATH)
-    mapped_positions_df = enrich_positions_with_mapping(positions_df, stock_mapping_df)
+    mapped_positions_df = enrich_positions_with_mapping(
+        positions_for_mapping, stock_mapping_df
+    )
     save_seaborn_position_distribution_pie_chart(
         mapped_positions_df,
         "sector",
@@ -350,6 +374,36 @@ def get_generated_chart_sets(today: str) -> dict[str, list[str]]:
     seaborn_charts.extend(
         sorted(
             path.name
+            for path in DEFAULT_OUTPUT_PATH.glob(f"seaborn_investment_positions_by_month_{today}_*.png")
+        )
+    )
+    seaborn_charts.extend(
+        sorted(
+            path.name
+            for path in DEFAULT_OUTPUT_PATH.glob(f"seaborn_transactions_by_month_{today}_*.png")
+        )
+    )
+    seaborn_charts.extend(
+        sorted(
+            path.name
+            for path in DEFAULT_OUTPUT_PATH.glob(f"country_exposure_pie_*_{today}_*.png")
+        )
+    )
+    plotly_charts.extend(
+        sorted(
+            path.name
+            for path in DEFAULT_OUTPUT_PATH.glob(f"plotly_investment_positions_by_month_{today}_*.html")
+        )
+    )
+    plotly_charts.extend(
+        sorted(
+            path.name
+            for path in DEFAULT_OUTPUT_PATH.glob(f"plotly_transactions_by_month_{today}_*.html")
+        )
+    )
+    seaborn_charts.extend(
+        sorted(
+            path.name
             for path in DEFAULT_OUTPUT_PATH.glob(f"seaborn_sector_distribution_*_{today}.png")
         )
     )
@@ -371,9 +425,15 @@ def get_generated_chart_sets(today: str) -> dict[str, list[str]]:
             for path in DEFAULT_OUTPUT_PATH.glob(f"plotly_geography_distribution_*_{today}.html")
         )
     )
+    plotly_charts.extend(
+        sorted(
+            path.name
+            for path in DEFAULT_OUTPUT_PATH.glob(f"plotly_country_exposure_pie_*_{today}.html")
+        )
+    )
     return {
-        "seaborn": seaborn_charts,
-        "plotly": plotly_charts,
+        "seaborn": sorted(dict.fromkeys(seaborn_charts)),
+        "plotly": sorted(dict.fromkeys(plotly_charts)),
     }
 
 
@@ -431,7 +491,9 @@ def run_report(
 
     transactions_df, positions_df = build_dataframes(workbooks, interactive_brokers_path)
     print_report_preview(workbooks, csv_files, transactions_df, positions_df)
-    monthly_position_totals_df = build_monthly_position_totals(workbooks, csv_files)
+    monthly_position_totals_df = build_monthly_position_totals(
+        workbooks, csv_files, fill_missing_months=False
+    )
     stock_code_mapping_df, output_warnings = save_report_outputs(
         workbooks,
         csv_files,

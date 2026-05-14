@@ -154,6 +154,10 @@ main {
   margin-bottom: 16px;
 }
 
+.debug-status-row {
+  margin: 12px 16px;
+}
+
 .status-badge {
   background: #fee4e2;
   border: 1px solid #fda29b;
@@ -251,18 +255,14 @@ main {
   padding: 16px;
 }
 
-.performance-assumptions {
+.performance-quality {
   border-top: 1px solid var(--line);
   padding: 12px 16px;
 }
 
-.performance-assumptions ol {
-  margin: 6px 0 0;
-  padding-left: 22px;
-}
-
-.performance-assumptions li {
-  margin-top: 4px;
+.performance-issues {
+  border-top: 1px solid var(--line);
+  padding: 0 16px 14px;
 }
 
 .metric strong {

@@ -294,8 +294,35 @@ function formatPerformanceMetric(performance, key) {
     .join("\n");
 }
 
+function derivePerformanceIssues(performance = {}) {
+  const assumptions = (performance.assumptions || []).map((item) => String(item || "").trim()).filter(Boolean);
+  const holdingIssues = (performance.by_holding || [])
+    .map((row) => String(row.assumption_note || "").trim())
+    .filter((note) => note && note !== "None");
+  const uniqueHoldingIssues = [...new Set(holdingIssues)];
+
+  const issues = assumptions.map((message) => ({
+    severity: "warning",
+    message,
+    action: "Upload older broker files to complete transaction history for affected holdings.",
+  }));
+  uniqueHoldingIssues.forEach((message) => {
+    issues.push({
+      severity: "warning",
+      message,
+      action: "Review the per-holding Assumptions column for impacted symbols.",
+    });
+  });
+
+  return issues;
+}
+
 function renderPerformanceMetrics(performance = {}) {
   const performanceHealth = document.querySelector("#performance-health");
+  const performanceQuality = document.querySelector("#performance-quality");
+  const issuesPanel = document.querySelector("#performance-issues-panel");
+  const issuesCount = document.querySelector("#performance-issues-count");
+  const issuesList = document.querySelector("#performance-issues-list");
   if (performanceHealth) {
     performanceHealth.classList.remove("status-good", "status-warn", "status-neutral");
   }
@@ -317,31 +344,39 @@ function renderPerformanceMetrics(performance = {}) {
   );
 
   const assumptions = performance.assumptions || [];
-  const assumptionPanel = document.querySelector("#performance-assumptions");
-  assumptionPanel.innerHTML = "";
+  const issues = derivePerformanceIssues(performance);
   if (!assumptions.length) {
-    assumptionPanel.textContent =
-      "Assumptions: none. IRR and TWR use the reported transaction history.";
     if (performanceHealth) {
-      performanceHealth.textContent = "Fresh Data";
+      performanceHealth.textContent = "Data Complete";
       performanceHealth.classList.add("status-good");
+    }
+    if (performanceQuality) {
+      performanceQuality.textContent = "Performance data complete. No assumptions were applied.";
+    }
+    if (issuesPanel && issuesCount && issuesList) {
+      issuesPanel.hidden = true;
+      issuesCount.textContent = "";
+      issuesList.innerHTML = "";
     }
     return;
   }
-
-  const heading = document.createElement("span");
-  heading.textContent = "Assumptions:";
-  const list = document.createElement("ol");
-  assumptions.forEach((assumption) => {
-    const item = document.createElement("li");
-    item.textContent = assumption;
-    list.appendChild(item);
-  });
-
-  assumptionPanel.append(heading, list);
   if (performanceHealth) {
-    performanceHealth.textContent = "Needs Attention";
+    performanceHealth.textContent = "Incomplete History";
     performanceHealth.classList.add("status-warn");
+  }
+  if (performanceQuality) {
+    performanceQuality.textContent = `${issues.length} issue(s) affecting performance confidence. Open "Attention Needed" for details and next steps.`;
+  }
+  if (issuesPanel && issuesCount && issuesList) {
+    issuesPanel.hidden = false;
+    issuesCount.textContent = `${issues.length} item(s)`;
+    issuesList.innerHTML = "";
+    issues.forEach((issue) => {
+      const item = document.createElement("li");
+      const severityLabel = issue.severity === "critical" ? "Blocking" : "Warning";
+      item.textContent = `${severityLabel}: ${issue.message} Next step: ${issue.action}`;
+      issuesList.appendChild(item);
+    });
   }
 }
 
@@ -527,7 +562,7 @@ function chartDisplayName(chart) {
   const extractCurrency = (prefix, extension) => {
     const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const escapedExt = extension.replace(".", "\\.");
-    const match = chartFile.match(new RegExp(`^${escapedPrefix}_([A-Za-z0-9]+)_\\d{4}-\\d{2}-\\d{2}\\.${escapedExt}$`, "i"));
+    const match = chartFile.match(new RegExp(`^${escapedPrefix}_([A-Za-z0-9]+)_\\d{4}-\\d{2}-\\d{2}(?:_\\d{6})?\\.${escapedExt}$`, "i"));
     return match ? match[1].toUpperCase() : "";
   };
   if (chartName.includes("investment_positions_by_month")) {
@@ -956,6 +991,10 @@ function renderFilteredTables() {
   document.querySelector("#position-caption").textContent = positionsAsOfDate
     ? `${rowSummary} | As of ${positionsAsOfDate}`
     : rowSummary;
+  const performanceAsOf = document.querySelector("#performance-as-of");
+  if (performanceAsOf) {
+    performanceAsOf.textContent = positionsAsOfDate ? `As of ${positionsAsOfDate}` : "";
+  }
 }
 
 function clearScreen() {
@@ -981,14 +1020,30 @@ function clearScreen() {
   renderTable("#positions-table", { columns: [], rows: [], total_rows: 0 });
   renderHoldingPerformanceTable([]);
   const performanceHealth = document.querySelector("#performance-health");
+  const performanceQuality = document.querySelector("#performance-quality");
+  const issuesPanel = document.querySelector("#performance-issues-panel");
+  const issuesCount = document.querySelector("#performance-issues-count");
+  const issuesList = document.querySelector("#performance-issues-list");
   if (performanceHealth) {
     performanceHealth.classList.remove("status-good", "status-warn");
     performanceHealth.classList.add("status-neutral");
     performanceHealth.textContent = "Awaiting run";
   }
+  if (performanceQuality) {
+    performanceQuality.textContent = "Run report to assess performance data quality.";
+  }
+  if (issuesPanel && issuesCount && issuesList) {
+    issuesPanel.hidden = true;
+    issuesCount.textContent = "";
+    issuesList.innerHTML = "";
+  }
 
   document.querySelector("#transaction-caption").textContent = "";
   document.querySelector("#position-caption").textContent = "";
+  const performanceAsOf = document.querySelector("#performance-as-of");
+  if (performanceAsOf) {
+    performanceAsOf.textContent = "";
+  }
   setConsoleOutput(DEFAULT_CONSOLE_MESSAGE);
   setStatus("Ready");
   setNotice("Cleared all on-screen data.", "info");
@@ -1311,3 +1366,5 @@ document.addEventListener("DOMContentLoaded", () => {
   setAdminModeUiState(false);
   runReport();
 });
+
+

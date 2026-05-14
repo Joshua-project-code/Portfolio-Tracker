@@ -24,6 +24,28 @@
           <h2>Console Output</h2>
           <button id="refresh-console" type="button">Refresh</button>
         </div>
+        <section class="status-row debug-status-row" aria-live="polite">
+          <div>
+            <span class="label">Refresh status</span>
+            <strong id="debug-refresh-status">Ready</strong>
+          </div>
+          <div>
+            <span class="label">Last refreshed</span>
+            <strong id="debug-last-refreshed">Never</strong>
+          </div>
+          <div>
+            <span class="label">Result</span>
+            <strong id="debug-refresh-result">No checks yet</strong>
+          </div>
+        </section>
+        <section id="debug-refresh-notice" class="notice-row info" hidden></section>
+        <section id="debug-refresh-history-panel" class="panel warnings-panel" hidden>
+          <div class="panel-heading">
+            <h3>Refresh History</h3>
+            <span class="caption">Latest 3 attempts</span>
+          </div>
+          <ul id="debug-refresh-history" class="warning-list"></ul>
+        </section>
         <pre id="console-output">Run the report to display parser output here.</pre>
       </section>
     </main>

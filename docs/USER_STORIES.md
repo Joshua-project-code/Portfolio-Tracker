@@ -376,3 +376,12 @@ sequenceDiagram
 | US-016 | `README.md`, `docs/WEBAPP_USER_GUIDE.md`, `docs/USER_STORIES.md`, `docs/testapp.md`, `docs/PYTHON_FILES.md`, `CLAUDE.md` |
 | US-017 | `portfolio_tracker/web.py`, `portfolio_tracker/templates/debug_console.html`, `portfolio_tracker/static/debug.js`, `portfolio_tracker/static/app.js` |
 | US-018 | `portfolio_tracker/templates/index.html`, `portfolio_tracker/templates/debug_console.html`, `portfolio_tracker/templates/application_testing.html`, `portfolio_tracker/static/back_to_top.js`, `portfolio_tracker/static/styles.css` |
+
+## Recent Updates (2026-05-14)
+
+- Performance UX now emphasizes actionable diagnostics via `Attention Needed` instead of a standalone assumptions list.
+- Portfolio Performance displays `As of` date consistency with Investment Positions.
+- Monthly transaction trend acceptance now includes explicit zero points for missing months per series.
+- Application Testing UX now includes direct failed/not-run case surfacing.
+- Debug Console UX now includes explicit refresh state feedback and history.
+

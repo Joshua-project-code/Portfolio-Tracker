@@ -44,3 +44,12 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | `docs/Run_time_df.md` | Runtime DataFrame inventory by module and workflow stage. |
 | `docs/testapp.md` | Test case catalogue consumed by the Application Testing page. |
 | `requirements.txt` | Python dependencies for running the app, parser, chart generation, and tests. |
+
+## Recent Updates (2026-05-14)
+
+- `portfolio_tracker/chart_helpers.py`: `build_monthly_transaction_totals` now completes month-by-series grids and fills missing points with `0`.
+- `portfolio_tracker/report_runner.py`: position distribution chart flow now fills missing stock codes from persisted mapping before sector/geography enrichment.
+- `portfolio_tracker/static/app.js`: performance section now renders actionable `Attention Needed` summaries and performance `As of` date.
+- `portfolio_tracker/static/testing.js`: run results are tracked by test-case ID and now include a failed/not-run outcome summary panel.
+- `portfolio_tracker/static/debug.js`: refresh UX now includes in-progress status, timestamps, change detection, and recent refresh history.
+

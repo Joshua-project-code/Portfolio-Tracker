@@ -47,7 +47,7 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-031 | `test_enrich_positions_with_mapping_empty_positions_returns_expected_columns` | Handles empty positions during mapping enrichment. | Returns empty DataFrame with `sector` and `geography` columns. |
 | TC-032 | `test_build_monthly_transaction_totals_groups_by_month_broker_and_currency` | Aggregates transaction amounts by month, broker, and currency. | April POEMS USD total is `150`; May IB SGD total is separate. |
 | TC-033 | `test_build_monthly_transaction_totals_empty_input_returns_schema` | Handles empty transaction input. | Returns empty monthly transaction DataFrame with expected columns. |
-| TC-034 | `test_aggregate_small_pie_slices_groups_values_below_threshold_as_others` | Groups small pie slices under the threshold. | Small categories combine into an `Others` row worth `10`. |
+| TC-034 | `test_aggregate_small_pie_slices_keeps_top_five_plus_others` | Keeps the top five pie categories and aggregates the remainder. | Returns top five categories plus an `Others` row worth `30`. |
 | TC-035 | `test_aggregate_small_pie_slices_returns_input_when_total_is_not_positive` | Avoids aggregation when total value is zero or negative. | Returns the original totals unchanged. |
 | TC-036 | `test_build_monthly_position_totals_combines_poems_and_ib_snapshots` | Builds monthly position totals from POEMS and IBKR snapshot files. | Returns broker/currency series for both sources with summed market values. |
 | TC-037 | `test_save_seaborn_monthly_position_chart_skips_empty_data` | Skips Seaborn position chart generation when there is no data. | Prints a skip message and creates no chart file. |
@@ -107,5 +107,12 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-091 | `test_calculate_holding_performance_metrics_mixed_complete_and_incomplete_holdings` | Validates mixed complete/incomplete holdings in one dataset. | Complete holding has blank assumption; incomplete holding is flagged with rule `missing_initial_investment`. |
 | TC-092 | `test_save_report_outputs_collects_warnings_when_output_write_fails` | Ensures output-save failures are non-fatal and captured as warnings. | `save_report_outputs` returns warning text instead of raising and still returns stock-code mapping data. |
 | TC-093 | `test_run_report_includes_output_warnings` | Confirms report payload includes output warnings returned by the save workflow. | `report[\"warnings\"]` contains warning messages for UI display/debugging. |
-| TC-094 | `test_run_report_with_console_output_includes_captured_console_text` | Confirms report wrapper still captures console output text after workflow updates. | Returned payload includes `console_output` and run_report invocation remains successful. |
+| TC-094 | `test_derive_positions_as_of_date_prefers_latest_transaction_date` | Confirms positions freshness date prefers the latest transaction date when available. | Returns the latest transaction date as ISO text. |
 | TC-095 | `test_csrf_protects_sensitive_post_endpoints` | Verifies destructive and sensitive POST API routes reject requests that do not include a valid CSRF token. | Protected endpoint responds with HTTP 403 and `Invalid or missing CSRF token.` |
+
+## Recent Updates (2026-05-14)
+
+- TC-034 now matches current implementation: `test_aggregate_small_pie_slices_keeps_top_five_plus_others`.
+- TC-094 now maps to `test_derive_positions_as_of_date_prefers_latest_transaction_date`.
+- Catalog integrity is now synchronized to avoid duplicate test names that can cause UI status mismatches.
+

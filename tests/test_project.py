@@ -802,9 +802,13 @@ class ChartHelperTests(unittest.TestCase):
 
         monthly = build_monthly_transaction_totals(transactions)
 
-        self.assertEqual(len(monthly), 2)
-        self.assertEqual(monthly.loc[0, "transaction_amount"], 150)
-        self.assertEqual(monthly.loc[0, "series"], "poems - USD")
+        self.assertEqual(len(monthly), 4)
+        self.assertEqual(monthly.loc[0, "transaction_amount"], 0)
+        self.assertEqual(monthly.loc[0, "series"], "ib - SGD")
+        self.assertEqual(monthly.loc[1, "transaction_amount"], 150)
+        self.assertEqual(monthly.loc[1, "series"], "poems - USD")
+        self.assertEqual(monthly.loc[2, "transaction_amount"], 25)
+        self.assertEqual(monthly.loc[3, "transaction_amount"], 0)
 
     def test_build_monthly_transaction_totals_empty_input_returns_schema(self) -> None:
         monthly = build_monthly_transaction_totals(pd.DataFrame())
@@ -812,25 +816,25 @@ class ChartHelperTests(unittest.TestCase):
         self.assertEqual(monthly.columns.tolist(), ["month", "series", "transaction_amount"])
         self.assertTrue(monthly.empty)
 
-    def test_aggregate_small_pie_slices_groups_values_below_threshold_as_others(self) -> None:
+    def test_aggregate_small_pie_slices_keeps_top_five_plus_others(self) -> None:
         totals = pd.DataFrame(
             {
-                "currency": ["USD", "USD", "USD"],
-                "sector": ["Large", "Small A", "Small B"],
-                "market_value": [90, 5, 5],
+                "currency": ["USD"] * 7,
+                "sector": ["A", "B", "C", "D", "E", "F", "G"],
+                "market_value": [70, 60, 50, 40, 30, 20, 10],
             }
         )
 
-        aggregated = aggregate_small_pie_slices(totals, "sector", "market_value", 0.10)
+        aggregated = aggregate_small_pie_slices(totals, "sector", "market_value", 6)
 
-        self.assertEqual(aggregated["sector"].tolist(), ["Large", "Others"])
-        self.assertEqual(aggregated.loc[1, "market_value"], 10)
-        self.assertEqual(aggregated.loc[1, "currency"], "USD")
+        self.assertEqual(aggregated["sector"].tolist(), ["A", "B", "C", "D", "E", "Others"])
+        self.assertEqual(aggregated.loc[5, "market_value"], 30)
+        self.assertEqual(aggregated.loc[5, "currency"], "USD")
 
     def test_aggregate_small_pie_slices_returns_input_when_total_is_not_positive(self) -> None:
         totals = pd.DataFrame({"sector": ["A"], "market_value": [0]})
 
-        aggregated = aggregate_small_pie_slices(totals, "sector", "market_value", 0.10)
+        aggregated = aggregate_small_pie_slices(totals, "sector", "market_value", 6)
 
         self.assertEqual(aggregated.equals(totals), True)
 
@@ -846,6 +850,22 @@ class ChartHelperTests(unittest.TestCase):
 
             self.assertEqual(monthly["series"].tolist(), ["interactive brokers - USD", "poems - USD"])
             self.assertEqual(monthly["market_value"].tolist(), [1550.0, 100.0])
+
+    def test_build_monthly_position_totals_fills_missing_months_with_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            folder = Path(temp_dir)
+            first = folder / "old.xlsx"
+            second = folder / "new.xlsx"
+            write_poems_workbook(first, "01/03/2026", market_value=100)
+            write_poems_workbook(second, "01/05/2026", market_value=200)
+
+            monthly = build_monthly_position_totals(
+                [first, second], [], fill_missing_months=True
+            )
+
+            self.assertEqual(monthly["month"].astype(str).tolist(), ["2026-03-01", "2026-04-01", "2026-05-01"])
+            self.assertEqual(monthly["series"].tolist(), ["poems - USD", "poems - USD", "poems - USD"])
+            self.assertEqual(monthly["market_value"].tolist(), [100.0, 0.0, 200.0])
 
     def test_save_seaborn_monthly_position_chart_skips_empty_data(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1417,7 +1437,7 @@ class ReportRunnerTests(unittest.TestCase):
                 chart_sets = get_generated_chart_sets(today)
 
             self.assertNotIn("matplotlib", chart_sets)
-            self.assertEqual(
+            self.assertCountEqual(
                 chart_sets["seaborn"],
                 [
                     f"seaborn_transactions_by_month_{today}.png",
@@ -1425,7 +1445,7 @@ class ReportRunnerTests(unittest.TestCase):
                     f"country_exposure_pie_USD_{today}.png",
                 ],
             )
-            self.assertEqual(chart_sets["plotly"], [f"plotly_transactions_by_month_{today}.html"])
+            self.assertCountEqual(chart_sets["plotly"], [f"plotly_transactions_by_month_{today}.html"])
 
     def test_run_report_with_console_output_includes_captured_console_text(self) -> None:
         with patch(

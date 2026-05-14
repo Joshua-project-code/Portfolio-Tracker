@@ -114,3 +114,10 @@ This file lists DataFrames created during the Portfolio Tracker runtime workflow
 
 - Some names (e.g., `raw`, `positions`, `totals`, `mapping`) are reused in different modules/functions with different scopes.
 - This file is intentionally implementation-focused; update it whenever DataFrame creation, naming, or flow changes.
+
+## Recent Updates (2026-05-14)
+
+- `monthly_transactions_df` now represents a completed month x series grid for the covered date range, with missing values filled to `0`.
+- Performance section rendering now consumes `positions_as_of` for header-level `As of` display in addition to positions table captions.
+- Testing page runtime state now tracks row status by test case ID, not test function name.
+

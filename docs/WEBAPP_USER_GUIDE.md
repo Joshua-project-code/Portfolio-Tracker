@@ -296,3 +296,12 @@ values, add or correct its stock code row in `data/etf_country_matrix.csv`.
 
 If tests fail in the web page, rerun the same test from the terminal with `-v`
 to see the full unittest output.
+
+## Recent Updates (2026-05-14)
+
+- `Portfolio Performance` now shows an `As of YYYY-MM-DD` caption in the section header.
+- Performance assumptions are now surfaced through `Attention Needed` and per-holding assumption details, instead of a separate assumptions list panel.
+- In `Transaction Trends`, monthly transaction lines now include zero-value points for months with no transactions for a broker/currency series.
+- `Application Testing` now shows a `Run Outcome` panel that lists failed and not-run test cases immediately after a run.
+- `Debug Console` refresh now shows in-progress/success/failure state, last refreshed time, `Updated` vs `No changes`, and a short refresh history.
+

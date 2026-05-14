@@ -200,3 +200,11 @@ python -m portfolio_tracker.parse_broker_reports
 
 If broker files are not available locally, state that runtime verification could not be completed and describe what was checked instead.
 
+## Recent Updates (2026-05-14)
+
+- Allocation pie charts: fixed top-5 plus `Others` behavior and mapping backfill for missing stock codes.
+- Portfolio performance UI: added actionable `Attention Needed` diagnostics and `As of` date in section header.
+- Transaction trend charts: missing month points are now zero-filled per broker/currency series.
+- Application Testing UX: added failed/not-run summary panel and row-status tracking by test case ID.
+- Debug Console UX: added explicit refresh lifecycle feedback, last refreshed timestamp, and refresh history.
+
