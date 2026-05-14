@@ -88,8 +88,13 @@ Acceptance criteria:
 - Chart legends and labels are readable in the web app.
 - The dashboard shows annualized IRR, simple return, time-weighted return, and
   CAGR above the charts where the available data supports those calculations.
+- The dashboard shows run-step progress and elapsed time while a report is
+  executing.
+- Non-fatal output-save warnings are surfaced in a dedicated warning panel.
 - The dashboard shows a per-holding return table (stocks/ETFs) with sortable
   IRR, SR, TWR, and CAGR columns.
+- Transaction and position tables include reset filters, column visibility
+  picker, and export-current-view actions.
 - Return metrics are kept currency-specific unless FX conversion data is added.
 - When transaction history is incomplete, the dashboard states the assumed
   initial investment used to calculate IRR and time-weighted return.
@@ -100,6 +105,7 @@ Acceptance criteria:
   `missing_initial_investment`.
 - Hovering the per-holding `Assumptions` field shows a debug popover with the
   rule reason and evidence (cash coverage, units coverage, inferred date/source).
+- The assumptions popover also supports click-to-open and copy/close actions.
 - When transaction history covers the current position cost basis, IRR and
   time-weighted return are calculated without adding an assumed starting
   investment.

@@ -27,14 +27,14 @@ This file lists the Python modules in Portfolio Tracker and what each one is use
 | --- | --- |
 | `README.md` | Main project setup, run, output, web app, parser, testing, and documentation guide. |
 | `CLAUDE.md` | Maintenance guidance for future coding-agent sessions in this repository. |
-| `portfolio_tracker/templates/index.html` | Main Portfolio Tracker web page. |
+| `portfolio_tracker/templates/index.html` | Main Portfolio Tracker web page, including run-progress stepper, warning panel, performance health badge, and table action controls. |
 | `portfolio_tracker/templates/debug_console.html` | Debug Console web page that displays parser/log output separately from the main dashboard. |
 | `portfolio_tracker/templates/application_testing.html` | Application Testing web page. |
-| `portfolio_tracker/static/app.js` | Frontend behavior for upload, report execution, Seaborn/Plotly chart-library toggling, admin-mode gated maintenance actions, status notifications, charts including country exposure pies, CSV links, and tables. |
+| `portfolio_tracker/static/app.js` | Frontend behavior for upload, report execution, run-step progress/elapsed timer, warning panel rendering, Seaborn/Plotly toggling, admin-mode gated maintenance actions, status notifications, charts including country exposure pies, CSV links, table filtering/sorting, column picker, export-current-view actions, and assumptions debug popovers. |
 | `portfolio_tracker/static/debug.js` | Frontend behavior for loading and refreshing the Debug Console output. |
 | `portfolio_tracker/static/back_to_top.js` | Shared Back To Top button behavior used by all web pages. |
 | `portfolio_tracker/static/testing.js` | Frontend behavior for listing, running, and displaying application test results. |
-| `portfolio_tracker/static/styles.css` | Shared web app styling, including the dashboard font stack, layout, responsive tables, chart containers, testing page styles, and assumption-debug tooltip popover styles. |
+| `portfolio_tracker/static/styles.css` | Shared web app styling, including the dashboard font stack, run stepper/warning panel visuals, responsive tables, chart containers, testing page styles, and assumptions/debug popover styles. |
 | `data/stock_mapping.csv` | Editable stock-code-to-sector/geography mapping used for pie chart enrichment. |
 | `data/etf_country_matrix.csv` | Editable country exposure percentage matrix for ETFs and individual listed holdings, used to calculate absolute country exposure from position market values. |
 | `data/stock_code_mapping.csv` | Persisted generated stock-code/name history created from broker reports. |

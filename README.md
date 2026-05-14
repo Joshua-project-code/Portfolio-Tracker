@@ -207,6 +207,8 @@ Click `Run Report` to parse the broker files and view:
 - Country exposure pie charts for SGD and USD in the Seaborn chart view
 - Generated CSV output links
 - The same parser messages that previously printed only to the console
+- Run progress stepper (`Fetching`, `Parsing and calculations`, `Rendering`, `Complete`) with elapsed time
+- A run warnings panel when output files are locked/unwritable but report data is still available
 
 The Input Files section shows loaded broker filenames in a capped list. When
 more than about five files are loaded for a broker, the list scrolls so the rest
@@ -235,6 +237,8 @@ Per-holding completeness uses explicit rule ordering:
 
 In the per-holding table, hover the `Assumptions` cell to view a detailed debug
 popover describing exactly why that row was or was not flagged.
+The assumptions popover also supports click-to-open behavior and copy/close
+actions for easier mobile and keyboard use.
 When transaction history covers the current position cost basis, IRR and
 time-weighted return are calculated from reported data without adding an
 assumed starting investment. Time-weighted return is approximated by chaining
@@ -244,6 +248,11 @@ exact transaction dates to weight external cash flows inside each sub-period.
 The web tables format selected numeric columns to two decimal places and align
 numeric cells to the right for readability. This display formatting does not
 change the source data or generated CSV files.
+Table workflows also include:
+- `Reset Filters` per table
+- `Columns` picker to show/hide visible columns
+- `Export Current View` to download the filtered view as CSV
+- explicit filtered-empty messaging when no rows match current filters
 
 Click `Upload Files` to add new broker exports from the web app:
 

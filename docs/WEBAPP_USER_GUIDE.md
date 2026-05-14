@@ -66,12 +66,26 @@ The report produces:
 - downloadable CSV links
 - transaction and investment-position tables
 - parser console output (on a separate Debug Console page)
+- run-progress stepper states and elapsed timer during execution
+- non-fatal warning panel when output artifacts cannot be written
 
 Generated files are written to the sibling `Output` folder using the current
 date in the filename.
 
 The Input Files section keeps each broker file list to about five visible rows.
 If more files are loaded, scroll inside the list to see the rest.
+
+### Run Progress And Warnings
+
+Each report run shows:
+
+- `Run Progress` stepper (`Fetching report`, `Parsing and calculations`,
+  `Rendering dashboard`, `Complete`)
+- elapsed run timer
+- `Run Warnings` panel when output-save issues occur (for example, locked files)
+
+This lets the dashboard keep usable on-screen results even when some generated
+files fail to save.
 
 ### Review Portfolio Performance
 
@@ -103,6 +117,8 @@ Assumptions are displayed as a numbered list:
    buys, observed sells, and date source.
 3. In `Per-Holding Returns (Stocks And ETFs)`, hover the `Assumptions` field
    for a debug popover that explains exactly why the row is flagged or not.
+   You can also click the field and use `Copy` / `Close` actions in the
+   popover.
 4. Holding-level rule outcomes are:
    - `unit_coverage_complete`
    - `cash_coverage_complete`
@@ -139,6 +155,15 @@ The `Output CSV Files` section links to generated CSV files, including:
 
 `stock_code_mapping.csv` is stored in the project `data` folder and records the
 latest stock-code/name mapping discovered from broker files.
+
+### Table Productivity Controls
+
+Both `Transaction Details` and `Investment Positions` include:
+
+- `Reset Filters` (clears search and dropdown filters)
+- `Columns` picker (show/hide visible columns)
+- `Export Current View` (downloads currently filtered rows as CSV)
+- explicit filtered-empty state messaging (`No rows match current filters.`)
 
 `data/stock_mapping.csv` is the editable classification file used for chart
 enrichment and is keyed by immutable `stock_code` with `sector` and

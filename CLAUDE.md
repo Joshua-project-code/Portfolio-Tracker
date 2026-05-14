@@ -91,7 +91,7 @@ python -m unittest discover -s tests -v
 - `data/etf_country_matrix.csv`: User-editable country exposure percentage matrix for ETFs and individual listed holdings. Required identifier columns are `ETF Name` and `Stock Code`; all other columns are treated as country percentage columns.
 - `data/stock_code_mapping.csv`: Persisted generated stock-code/name history from broker reports. This file can be committed so future runs can recover known stock codes from current or historical broker names.
 - `tests/test_project.py`: Automated unittest coverage for parser helpers, broker parsers, report workflow helpers, output helpers, stock mapping, chart aggregation, validation output, and Flask routes.
-- `docs/testapp.md`: Test case catalogue with each test's description and expected observed output. It currently tracks 94 tests.
+- `docs/testapp.md`: Test case catalogue with each test's description and expected observed output. It currently tracks 95 tests.
 - `docs/WEBAPP_USER_GUIDE.md`: Web app user guide covering Portfolio Tracker usage, country exposure maintenance, and Application Testing workflows.
 - `docs/USER_STORIES.md`: Retrospective user stories, acceptance criteria, Mermaid workflow diagrams, and story-to-file traceability.
 - `docs/PYTHON_FILES.md`: Python module reference.

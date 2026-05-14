@@ -6,7 +6,7 @@ Run all tests from the project folder with:
 python -m unittest discover -s tests -v
 ```
 
-The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 94 catalogued test cases.
+The suite is implemented in `tests/test_project.py` and uses workspace-local temporary files so broker exports and generated outputs are not required. It currently contains 95 catalogued test cases.
 
 Keep this catalogue synchronized with `tests/test_project.py`. Whenever a test
 is added, removed, renamed, or materially changed, update the matching catalogue
@@ -108,3 +108,4 @@ entry in the same change so the Application Testing page stays accurate.
 | TC-092 | `test_save_report_outputs_collects_warnings_when_output_write_fails` | Ensures output-save failures are non-fatal and captured as warnings. | `save_report_outputs` returns warning text instead of raising and still returns stock-code mapping data. |
 | TC-093 | `test_run_report_includes_output_warnings` | Confirms report payload includes output warnings returned by the save workflow. | `report[\"warnings\"]` contains warning messages for UI display/debugging. |
 | TC-094 | `test_run_report_with_console_output_includes_captured_console_text` | Confirms report wrapper still captures console output text after workflow updates. | Returned payload includes `console_output` and run_report invocation remains successful. |
+| TC-095 | `test_csrf_protects_sensitive_post_endpoints` | Verifies destructive and sensitive POST API routes reject requests that do not include a valid CSRF token. | Protected endpoint responds with HTTP 403 and `Invalid or missing CSRF token.` |

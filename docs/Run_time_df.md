@@ -30,7 +30,6 @@ This file lists DataFrames created during the Portfolio Tracker runtime workflow
 - `currency_flows`: Currency-specific subset of normalized investor cash flows.
 - `currency_valuations`: Currency-specific subset of valuation points used for assumptions and TWR.
 - `return_flows`: Currency-specific cash-flow dataframe used for IRR/TWR, including an assumed initial outflow when transaction history is incomplete.
-- `rows`: Per-holding metric output rows (`annualized_irr`, `simple_return`, `time_weighted_return`, `cagr`, `assumption_note`) for stocks/ETFs in current positions.
 - `rows`: Per-holding metric output rows (`annualized_irr`, `simple_return`, `time_weighted_return`, `cagr`, `assumption_note`, `assumption_rule`, `assumption_debug`) for stocks/ETFs in current positions.
 - `assumption`: Per-currency inferred missing-history assumption built from cost basis, observed buy outflows, observed sell inflows, and available valuation/transaction dates.
 - `assumption_rule`: Explicit holding-level completeness rule outcome:
@@ -41,6 +40,8 @@ This file lists DataFrames created during the Portfolio Tracker runtime workflow
 
 - `warnings`: Non-fatal output-save warnings included in report payload when
   CSV/chart output files are locked or otherwise not writable.
+- `report["warnings"]`: UI-facing warning list rendered in the dashboard run
+  warnings panel after each run.
 - `flows`: Currency-specific external cash-flow dataframe used by TWR with exact transaction dates.
 - `period_flows`: External cash flows that fall inside one valuation-to-valuation TWR sub-period.
 - `current_rows`: Month-aligned current portfolio values by currency.
